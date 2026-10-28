@@ -21,6 +21,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   fileUploads   FileUpload[]
+  userSettings  UserSettings?
 }
 
 model Hole {
@@ -33,6 +34,8 @@ model Hole {
   collar      Collar?
   surveys     Survey[]
   target      Target?
+  fileUploads FileUpload[]
+  reports     Report[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -112,12 +115,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @text
-  access_token      String? @text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @text
+  id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
