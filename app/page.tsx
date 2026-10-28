@@ -14,15 +14,15 @@ export default function HomePage() {
             Sign in
           </a>
           <a
-            href="/holes"
+            href="/auth/register"
             className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
-            View holes
+            Create account
           </a>
         </div>
         <p className="mt-8 text-sm text-gray-500">
-          Phase 1 foundation complete. Next: authentication, database, and hole
-          management.
+          Already have an account? Sign in above, or create a new account to get
+          started.
         </p>
       </div>
     </main>
