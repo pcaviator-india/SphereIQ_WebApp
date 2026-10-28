@@ -51,3 +51,4 @@ export async function recalculateHoleTrajectory(holeId: string) {
     console.error("Auto recalculate trajectory error:", err);
   }
 }
+

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    let fileContent = "";
+    let dto: EznHoleFileDto;
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
@@ -20,18 +20,20 @@ export async function POST(req: NextRequest) {
       if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
       }
-      fileContent = await file.text();
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      if (buffer.length === 0) {
+        return NextResponse.json({ error: "File content is empty" }, { status: 400 });
+      }
+      dto = parseEznFile(buffer);
     } else {
       const body = await req.json();
-      fileContent = body.content || body.fileContent || JSON.stringify(body);
+      const content = body.content || body.fileContent || JSON.stringify(body);
+      if (!content || (typeof content === "string" && content.trim().length === 0)) {
+        return NextResponse.json({ error: "File content is empty" }, { status: 400 });
+      }
+      dto = parseEznFile(content);
     }
-
-    if (!fileContent || fileContent.trim().length === 0) {
-      return NextResponse.json({ error: "File content is empty" }, { status: 400 });
-    }
-
-    // Parse .ezn file
-    const dto: EznHoleFileDto = parseEznFile(fileContent);
 
     // Create the hole in DB
     const hole = await prisma.hole.create({
@@ -107,3 +109,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

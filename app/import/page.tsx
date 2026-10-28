@@ -69,14 +69,15 @@ export default function ImportPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = (event.target?.result as string) || "";
-        const dto = parseEznFile(text);
+        const buffer = event.target?.result as ArrayBuffer;
+        if (!buffer) throw new Error("Could not read file");
+        const dto = parseEznFile(buffer);
         setEznDto(dto);
       } catch (err: any) {
         setError(err.message || "Could not parse .ezn file. Make sure it is a valid SphereIQ or Ezy-Nav borehole file.");
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleEznImport = async (e: React.FormEvent) => {

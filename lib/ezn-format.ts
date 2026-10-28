@@ -5,6 +5,8 @@
  * - JSON payload representing HoleFileDto
  */
 
+import { isNrbfBinary, parseNrbfEznFile } from "./nrbf-parser";
+
 export interface EznSurveyRow {
   MD: number;
   Dip: number; // In directional drilling, dip/inclination
@@ -41,11 +43,32 @@ export interface EznHoleFileDto {
 export const EZN_MAGIC = "EZN1";
 
 /**
- * Parses an .ezn file content (buffer or string) into an EznHoleFileDto object.
- * Robustly accepts files with or without the EZN1\n header, and handles casing variations.
+ * Parses an .ezn file content (string, Buffer, Uint8Array, or ArrayBuffer) into an EznHoleFileDto object.
+ * Supports both:
+ * 1. Legacy Ezy-Nav binary (.NET BinaryFormatter / NRBF) files
+ * 2. Modern SphereIQ EZN1 JSON files (with or without magic header)
  */
-export function parseEznFile(content: string | Buffer): EznHoleFileDto {
-  let text = typeof content === "string" ? content : content.toString("utf-8");
+export function parseEznFile(content: string | Buffer | Uint8Array | ArrayBuffer): EznHoleFileDto {
+  // 1. Check for legacy NRBF binary format
+  if (typeof content !== "string") {
+    if (isNrbfBinary(content)) {
+      return parseNrbfEznFile(content);
+    }
+  } else {
+    // If passed as binary string, check first bytes for NRBF header (\x00\x01\x00\x00\x00\xff\xff\xff\xff)
+    if (content.length >= 9 && content.charCodeAt(0) === 0x00 && content.charCodeAt(1) === 0x01) {
+      const bytes = new Uint8Array(content.length);
+      for (let i = 0; i < content.length; i++) {
+        bytes[i] = content.charCodeAt(i) & 0xff;
+      }
+      if (isNrbfBinary(bytes)) {
+        return parseNrbfEznFile(bytes);
+      }
+    }
+  }
+
+  // 2. Modern JSON / EZN1 format
+  let text = typeof content === "string" ? content : new TextDecoder("utf-8").decode(content instanceof Uint8Array ? content : new Uint8Array(content));
 
   // Remove potential UTF-8 BOM
   if (text.charCodeAt(0) === 0xfeff) {
@@ -251,3 +274,4 @@ export function serializeSurveyCsv(data: {
 
   return lines.join("\r\n");
 }
+
