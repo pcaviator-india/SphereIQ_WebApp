@@ -99,15 +99,15 @@ export default async function HoleDetailPage({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase">Northing</p>
-                  <p className="text-lg text-gray-900">{hole.collar.northing} m</p>
+                  <p className="text-lg text-gray-900">{hole.collar.northing.toString()} m</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase">Easting</p>
-                  <p className="text-lg text-gray-900">{hole.collar.easting} m</p>
+                  <p className="text-lg text-gray-900">{hole.collar.easting.toString()} m</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase">Elevation</p>
-                  <p className="text-lg text-gray-900">{hole.collar.elevation} m</p>
+                  <p className="text-lg text-gray-900">{hole.collar.elevation.toString()} m</p>
                 </div>
               </div>
             </div>
@@ -146,9 +146,9 @@ export default async function HoleDetailPage({
                   <tbody>
                     {hole.surveys.map((s) => (
                       <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td className="py-3 text-gray-900">{s.measuredDepth} m</td>
-                        <td className="py-3 text-gray-900">{s.inclination}°</td>
-                        <td className="py-3 text-gray-900">{s.azimuth}°</td>
+                        <td className="py-3 text-gray-900">{s.measuredDepth.toString()} m</td>
+                        <td className="py-3 text-gray-900">{s.inclination.toString()}°</td>
+                        <td className="py-3 text-gray-900">{s.azimuth.toString()}°</td>
                         <td className="py-3 text-gray-600">
                           {s.trueVerticalDepth ? s.trueVerticalDepth + " m" : "—"}
                         </td>

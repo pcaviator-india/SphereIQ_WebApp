@@ -22,14 +22,16 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64 = buffer.toString("base64");
-    const dataUrl = `data:${file.mimeType};base64,${base64}`;
+    const dataUrl = `data:${(file as File).type};base64,${base64}`;
+    const mimeType = (file as File).type || "application/octet-stream";
+    const size = (file as File).size;
 
     const fileUpload = await prisma.fileUpload.create({
       data: {
         fileName: file.name,
         fileUrl: dataUrl,
-        mimeType: file.mimeType,
-        size: file.size,
+        mimeType: mimeType,
+        size,
         holeId: holeId || null,
         userId: session.user.id,
       },

@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PrismaClient } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 export default function RegisterPage() {
   const [name, setName] = useState("");

@@ -22,6 +22,7 @@ model User {
   accounts      Account[]
   fileUploads   FileUpload[]
   userSettings  UserSettings?
+  reports       Report[]
 }
 
 model Hole {
@@ -96,6 +97,8 @@ model Report {
   title     String
   type      String   // build | trend | extrapolate | status
   pdfUrl    String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 

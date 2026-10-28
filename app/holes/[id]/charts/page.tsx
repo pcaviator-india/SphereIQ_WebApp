@@ -160,7 +160,7 @@ export default async function HoleChartsPage({
                       pointRadius: i === 0 ? 3 : 2,
                     })),
                   }}
-                  options={trajectoryOptions}
+                  options={trajectoryOptions as any}
                 />
               </div>
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-[500px]">
@@ -173,7 +173,7 @@ export default async function HoleChartsPage({
                   data={{
                     datasets: doglegData,
                   }}
-                  options={doglegOptions}
+                  options={doglegOptions as any}
                 />
               </div>
             </div>

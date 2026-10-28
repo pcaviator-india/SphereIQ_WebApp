@@ -90,7 +90,7 @@ export default async function HolesPage() {
                   {hole.collar && (
                     <p>
                       <span className="font-medium text-gray-700">Collar:</span>{" "}
-                      ({hole.collar.northing}, {hole.collar.easting})
+                      ({hole.collar.northing.toString()}, {hole.collar.easting.toString()})
                     </p>
                   )}
                   <p>

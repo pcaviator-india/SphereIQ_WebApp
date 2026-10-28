@@ -180,7 +180,7 @@ export default async function SurveyCalculatePage({
                 </table>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
