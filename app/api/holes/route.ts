@@ -5,7 +5,13 @@ import { z } from "zod";
 
 const holeCreateSchema = z.object({
   holeId: z.string().min(1),
+  rigId: z.string().min(1),
   name: z.string().min(1),
+  location: z.string().optional(),
+  area: z.string().optional(),
+  drillingContractor: z.string().optional(),
+  surveyingContractor: z.string().optional(),
+  client: z.string().optional(),
   status: z.enum(["planned", "drilling", "completed", "archived"]).default("planned"),
 });
 
@@ -41,7 +47,13 @@ export async function POST(req: NextRequest) {
     const hole = await prisma.hole.create({
       data: {
         holeId: data.holeId,
+        rigId: data.rigId,
         name: data.name,
+        location: data.location,
+        area: data.area,
+        drillingContractor: data.drillingContractor,
+        surveyingContractor: data.surveyingContractor,
+        client: data.client,
         status: data.status,
         userId: session.user.id,
       },

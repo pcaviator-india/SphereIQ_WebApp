@@ -28,8 +28,14 @@ model User {
 model Hole {
   id          String   @id @default(uuid())
   holeId      String   // e.g., "H-001"
+  rigId       String   // Required - drill rig identification
   name        String
   status      String   @default("planned") // planned | drilling | completed | archived
+  location    String?  // Mine site
+  area        String?  // Area of mine site
+  drillingContractor   String?
+  surveyingContractor  String?
+  client      String?
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   collar      Collar?
