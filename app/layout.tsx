@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { getServerAuthSession } from "@/lib/auth";
+import SidebarNav from "./components/SidebarNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -9,14 +11,32 @@ export const metadata: Metadata = {
   description: "Cross-platform directional drilling planning web application",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerAuthSession();
+
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <div className="flex min-h-screen">
+          {session && (
+            <SidebarNav
+              userEmail={session.user?.email ?? ""}
+              userName={session.user?.name ?? ""}
+            />
+          )}
+          <main
+            className={`flex-1 ${
+              session ? "ml-56" : ""
+            } bg-gray-50 min-h-screen`}
+          >
+            {children}
+          </main>
+        </div>
+      </body>
     </html>
   );
 }

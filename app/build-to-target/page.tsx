@@ -3,85 +3,96 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default function BuildToTargetPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function BuildToTargetPage() {
+  // ── All hooks declared FIRST ──────────────────────────────────────────────
+  const [holes, setHoles] = useState<any[]>([]);
+  const [selectedHoleId, setSelectedHoleId] = useState("");
   const [hole, setHole] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/holes/${params.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setHole(data.hole);
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
-  }, [params.id]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!hole) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Hole not found</h1>
-          <Link href="/holes" className="text-blue-600 hover:underline">
-            Back to holes
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const [target, setTarget] = useState({
-    tvd: "",
-    northing: "",
-    easting: "",
-  });
-  const [vsAzimuth, setVsAzimuth] = useState(0);
+  const [surveys, setSurveys] = useState<any[]>([]);
+  const [collar, setCollar] = useState<any>(null);
+  const [isLoadingHoles, setIsLoadingHoles] = useState(true);
+  const [isLoadingHole, setIsLoadingHole] = useState(false);
+  const [targetTVD, setTargetTVD] = useState("");
+  const [targetNorthing, setTargetNorthing] = useState("");
+  const [targetEasting, setTargetEasting] = useState("");
+  const [vsAzimuth, setVsAzimuth] = useState("0");
   const [result, setResult] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState("");
+  // ─────────────────────────────────────────────────────────────────────────
 
-  const handleCalculate = async () => {
-    setIsCalculating(true);
+  // Fetch the list of holes on mount
+  useEffect(() => {
+    fetch("/api/holes")
+      .then((res) => res.json())
+      .then((data) => {
+        setHoles(data.holes ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingHoles(false));
+  }, []);
+
+  // Fetch collar + surveys whenever a hole is selected
+  useEffect(() => {
+    if (!selectedHoleId) {
+      setHole(null);
+      setSurveys([]);
+      setCollar(null);
+      setResult(null);
+      return;
+    }
+    setIsLoadingHole(true);
+    setResult(null);
     setError("");
 
+    Promise.all([
+      fetch(`/api/holes/${selectedHoleId}`).then((r) => r.json()),
+      fetch(`/api/holes/${selectedHoleId}/surveys`).then((r) => r.json()),
+      fetch(`/api/holes/${selectedHoleId}/collar`).then((r) => r.json()),
+    ])
+      .then(([holeData, surveysData, collarData]) => {
+        setHole(holeData.hole);
+        setSurveys(surveysData.surveys ?? holeData.hole?.surveys ?? []);
+        setCollar(collarData.collar ?? holeData.hole?.collar ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingHole(false));
+  }, [selectedHoleId]);
+
+  const handleCalculate = async () => {
+    if (!targetTVD) return;
+    setIsCalculating(true);
+    setError("");
+    setResult(null);
+
     try {
-      const stations = hole.surveys.map((s: any) => ({
-        measuredDepth: s.measuredDepth,
-        inclination: s.inclination,
-        azimuth: s.azimuth,
+      const stations = surveys.map((s: any) => ({
+        measuredDepth: Number(s.measuredDepth),
+        inclination: Number(s.inclination),
+        azimuth: Number(s.azimuth),
       }));
+
+      const collarPayload = collar
+        ? {
+            northing: Number(collar.northing),
+            easting: Number(collar.easting),
+            elevation: Number(collar.elevation),
+          }
+        : { northing: 0, easting: 0, elevation: 0 };
 
       const res = await fetch("/api/build-to-target", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          holeId: hole.id,
-          collar: hole.collar
-            ? {
-                northing: Number(hole.collar.northing),
-                easting: Number(hole.collar.easting),
-                elevation: Number(hole.collar.elevation),
-              }
-            : { northing: 0, easting: 0, elevation: 0 },
+          holeId: selectedHoleId,
+          collar: collarPayload,
           stations,
           target: {
-            tvd: Number(target.tvd),
-            northing: Number(target.northing),
-            easting: Number(target.easting),
+            tvd: Number(targetTVD),
+            northing: Number(targetNorthing),
+            easting: Number(targetEasting),
           },
-          vsAzimuth,
+          vsAzimuth: Number(vsAzimuth),
         }),
       });
 
@@ -89,27 +100,84 @@ export default function BuildToTargetPage({
       const data = await res.json();
       setResult(data);
     } catch {
-      setError("Build-to-target calculation failed");
+      setError("Build-to-target calculation failed. Please check your inputs.");
     } finally {
       setIsCalculating(false);
     }
   };
 
+  const lastSurvey = surveys.length > 0 ? surveys[surveys.length - 1] : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="px-6 py-8">
         <div className="max-w-4xl mx-auto">
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-              <Link href="/holes" className="text-sm text-blue-600 hover:underline mb-2 inline-block">
+              <Link
+                href="/holes"
+                className="text-sm text-blue-600 hover:underline mb-2 inline-block"
+              >
                 ← Back to holes
               </Link>
               <h1 className="text-3xl font-bold text-gray-900">Build to Target</h1>
-              <p className="text-gray-600">{hole.name} — {hole.holeId}</p>
+              <p className="text-gray-600">
+                Plan a build section to reach a target position
+              </p>
             </div>
           </div>
 
+          {/* Hole Selector */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Select Hole</h2>
+            {isLoadingHoles ? (
+              <p className="text-sm text-gray-500">Loading holes...</p>
+            ) : (
+              <select
+                value={selectedHoleId}
+                onChange={(e) => setSelectedHoleId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">— Select a hole —</option>
+                {holes.map((h: any) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name} ({h.holeId})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {isLoadingHole && (
+              <p className="text-sm text-gray-500 mt-3">Loading hole data...</p>
+            )}
+
+            {hole && !isLoadingHole && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <InfoCard label="Status" value={hole.status ?? "—"} />
+                <InfoCard label="Surveys" value={String(surveys.length)} />
+                {lastSurvey && (
+                  <>
+                    <InfoCard
+                      label="Last MD"
+                      value={`${Number(lastSurvey.measuredDepth).toFixed(2)} m`}
+                    />
+                    <InfoCard
+                      label="Last TVD"
+                      value={
+                        lastSurvey.trueVerticalDepth != null
+                          ? `${Number(lastSurvey.trueVerticalDepth).toFixed(2)} m`
+                          : "—"
+                      }
+                    />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Target Form */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Target Settings</h2>
               <div className="space-y-4">
@@ -120,8 +188,9 @@ export default function BuildToTargetPage({
                   <input
                     type="number"
                     required
-                    value={target.tvd}
-                    onChange={(e) => setTarget({ ...target, tvd: e.target.value })}
+                    placeholder="e.g. 2000"
+                    value={targetTVD}
+                    onChange={(e) => setTargetTVD(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -131,8 +200,9 @@ export default function BuildToTargetPage({
                   </label>
                   <input
                     type="number"
-                    value={target.northing}
-                    onChange={(e) => setTarget({ ...target, northing: e.target.value })}
+                    placeholder="e.g. 500"
+                    value={targetNorthing}
+                    onChange={(e) => setTargetNorthing(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -142,25 +212,33 @@ export default function BuildToTargetPage({
                   </label>
                   <input
                     type="number"
-                    value={target.easting}
-                    onChange={(e) => setTarget({ ...target, easting: e.target.value })}
+                    placeholder="e.g. 300"
+                    value={targetEasting}
+                    onChange={(e) => setTargetEasting(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Vertical Section Azimuth (°)
+                    VS Azimuth (°)
                   </label>
                   <input
                     type="number"
                     value={vsAzimuth}
-                    onChange={(e) => setVsAzimuth(Number(e.target.value))}
+                    onChange={(e) => setVsAzimuth(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+
+                {error && (
+                  <div className="p-3 rounded-md bg-red-50 border border-red-100 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
+
                 <button
                   onClick={handleCalculate}
-                  disabled={isCalculating || !target.tvd}
+                  disabled={isCalculating || !targetTVD || !selectedHoleId}
                   className="w-full px-5 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
                 >
                   {isCalculating ? "Calculating..." : "Calculate Build Plan"}
@@ -168,63 +246,121 @@ export default function BuildToTargetPage({
               </div>
             </div>
 
+            {/* Results */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Results</h2>
-              {error && (
-                <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-100 text-sm text-red-600">
-                  {error}
-                </div>
+
+              {!result && !error && (
+                <p className="text-gray-500 text-sm">
+                  Select a hole, enter target settings, and click Calculate.
+                </p>
               )}
+
               {result && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Above Target
-                    </span>
+                  {/* Above Target Badge */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+                    <span className="text-sm font-medium text-gray-700">Above Target?</span>
                     <span
-                      className={`text-sm font-medium ${
-                        result.aboveTarget ? "text-green-600" : "text-red-600"
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        result.aboveTarget
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
                       }`}
                     >
                       {result.aboveTarget ? "Yes" : "No"}
                     </span>
                   </div>
+
+                  {/* Build Plan details */}
                   {result.aboveTarget && result.buildPlan && (
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Build Rate</span>
-                        <span className="text-gray-900 font-medium">
-                          {result.buildPlan.buildRate.toFixed(2)} °/30m
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Build End MD</span>
-                        <span className="text-gray-900 font-medium">
-                          {result.buildPlan.buildEndMD.toFixed(2)} m
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total MD</span>
-                        <span className="text-gray-900 font-medium">
-                          {result.buildPlan.totalMD.toFixed(2)} m
-                        </span>
-                      </div>
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        Build Plan
+                      </h3>
+                      <ResultRow
+                        label="Build Rate"
+                        value={`${Number(result.buildPlan.buildRate).toFixed(2)} °/30m`}
+                      />
+                      <ResultRow
+                        label="Build End MD"
+                        value={`${Number(result.buildPlan.buildEndMD).toFixed(2)} m`}
+                      />
+                      <ResultRow
+                        label="Hold Start MD"
+                        value={`${Number(result.buildPlan.holdStartMD ?? result.buildPlan.buildEndMD).toFixed(2)} m`}
+                      />
+                      <ResultRow
+                        label="Total MD"
+                        value={`${Number(result.buildPlan.totalMD).toFixed(2)} m`}
+                      />
                     </div>
                   )}
+
+                  {/* Last survey position */}
+                  {lastSurvey && (
+                    <div className="space-y-2 pt-2 border-t border-gray-100">
+                      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        Last Survey Position
+                      </h3>
+                      <ResultRow
+                        label="TVD"
+                        value={
+                          lastSurvey.trueVerticalDepth != null
+                            ? `${Number(lastSurvey.trueVerticalDepth).toFixed(2)} m`
+                            : "—"
+                        }
+                      />
+                      <ResultRow
+                        label="Northing"
+                        value={
+                          lastSurvey.northing != null
+                            ? `${Number(lastSurvey.northing).toFixed(2)} m`
+                            : "—"
+                        }
+                      />
+                      <ResultRow
+                        label="Easting"
+                        value={
+                          lastSurvey.easting != null
+                            ? `${Number(lastSurvey.easting).toFixed(2)} m`
+                            : "—"
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Warning when not above target */}
                   {!result.aboveTarget && (
                     <div className="p-3 rounded-md bg-amber-50 border border-amber-100 text-sm text-amber-700">
-                      Hole is at or below target TVD. Build to target cannot be performed.
+                      The hole is at or below the target TVD. Build-to-target cannot be
+                      performed from this position.
                     </div>
                   )}
                 </div>
-              )}
-              {!result && (
-                <p className="text-gray-500 text-sm">Enter target settings and calculate.</p>
               )}
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+      <p className="text-xs font-semibold text-gray-400 uppercase mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function ResultRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+      <span className="text-sm text-gray-600">{label}</span>
+      <span className="text-sm font-semibold text-gray-900">{value}</span>
     </div>
   );
 }

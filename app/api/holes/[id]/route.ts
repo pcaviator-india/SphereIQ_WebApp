@@ -5,6 +5,13 @@ import { z } from "zod";
 
 const holeUpdateSchema = z.object({
   name: z.string().min(1).optional(),
+  holeId: z.string().min(1).optional(),
+  rigId: z.string().min(1).optional(),
+  location: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  drillingContractor: z.string().optional().nullable(),
+  surveyingContractor: z.string().optional().nullable(),
+  client: z.string().optional().nullable(),
   status: z.enum(["planned", "drilling", "completed", "archived"]).optional(),
 });
 
@@ -19,7 +26,7 @@ export async function GET(
 
   const hole = await prisma.hole.findFirst({
     where: { id: params.id, userId: session.user.id },
-    include: { collar: true, surveys: true, target: true, fileUploads: true },
+    include: { collar: true, surveys: { orderBy: { measuredDepth: "asc" } }, target: true, fileUploads: true },
   });
 
   if (!hole) {
