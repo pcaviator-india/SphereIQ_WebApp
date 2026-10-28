@@ -1,15 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getServerAuthSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
-export default async function CreateHolePage() {
-  const session = await getServerAuthSession();
-  if (!session?.user?.id) {
-    return null;
-  }
-
+export default function CreateHolePage() {
   const router = useRouter();
   const [holeId, setHoleId] = useState("");
   const [name, setName] = useState("");

@@ -1,22 +1,37 @@
-import { useState } from "react";
-import { getServerAuthSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default async function SurveyCalculatePage({
+export default function SurveyCalculatePage({
   params,
 }: {
   params: { id: string };
 }) {
-  const session = await getServerAuthSession();
-  if (!session?.user?.id) {
-    return null;
-  }
+  const [hole, setHole] = useState<any>(null);
+  const [vsAzimuth, setVsAzimuth] = useState(0);
+  const [trajectory, setTrajectory] = useState<any[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const hole = await prisma.hole.findFirst({
-    where: { id: params.id, userId: session.user.id },
-    include: { collar: true, surveys: { orderBy: { measuredDepth: "asc" } } },
-  });
+  useEffect(() => {
+    fetch(`/api/holes/${params.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setHole(data.hole);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   if (!hole) {
     return (
@@ -30,11 +45,6 @@ export default async function SurveyCalculatePage({
       </div>
     );
   }
-
-  const [vsAzimuth, setVsAzimuth] = useState(0);
-  const [trajectory, setTrajectory] = useState<any[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [error, setError] = useState("");
 
   const handleCalculate = async () => {
     setIsCalculating(true);

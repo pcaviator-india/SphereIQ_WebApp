@@ -1,22 +1,33 @@
-import { useState } from "react";
-import { getServerAuthSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default async function BuildToTargetPage({
+export default function BuildToTargetPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const session = await getServerAuthSession();
-  if (!session?.user?.id) {
-    return null;
-  }
+  const [hole, setHole] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const hole = await prisma.hole.findFirst({
-    where: { id: params.id, userId: session.user.id },
-    include: { collar: true, surveys: { orderBy: { measuredDepth: "asc" } }, target: true },
-  });
+  useEffect(() => {
+    fetch(`/api/holes/${params.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setHole(data.hole);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   if (!hole) {
     return (
