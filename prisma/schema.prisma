@@ -28,7 +28,7 @@ model User {
 model Hole {
   id          String   @id @default(uuid())
   holeId      String   // e.g., "H-001"
-  rigId       String   // Required - drill rig identification
+  rigId       String   @default("RIG-01") // Required - drill rig identification
   name        String
   status      String   @default("planned") // planned | drilling | completed | archived
   location    String?  // Mine site
