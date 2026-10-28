@@ -202,3 +202,150 @@ export function calculateBuildPlan(
   };
 }
 
+
+
+// ── Distance & Navigation Calculations ported from SphereIQ Core / NavMath ──
+
+export interface DistanceResult {
+  north: number;
+  east: number;
+  horizontalDistance: number;
+  tvd: number;
+}
+
+export function calculateDistanceToTarget(
+  lastSurvey: { northing: number; easting: number; trueVerticalDepth: number },
+  target: { northing: number; easting: number; tvd: number }
+): DistanceResult {
+  const north = target.northing - lastSurvey.northing;
+  const east = target.easting - lastSurvey.easting;
+  const hd = Math.sqrt(north * north + east * east);
+  const tvd = target.tvd - lastSurvey.trueVerticalDepth;
+
+  return {
+    north: Math.abs(north),
+    east: Math.abs(east),
+    horizontalDistance: hd,
+    tvd: tvd,
+  };
+}
+
+export interface StraightPathResult {
+  md: number;
+  tvd: number;
+  northing: number;
+  easting: number;
+  northDistance: number;
+  eastDistance: number;
+  horizontalDistance: number;
+}
+
+export function calculateStraightPathToTargetTVD(
+  lastSurvey: {
+    measuredDepth: number;
+    inclination: number;
+    azimuth: number;
+    trueVerticalDepth: number;
+    northing: number;
+    easting: number;
+  },
+  target: { tvd: number; northing: number; easting: number }
+): StraightPathResult | null {
+  const deltaTVD = target.tvd - lastSurvey.trueVerticalDepth;
+  if (deltaTVD <= 0) return null;
+
+  // In EzyPlan, dip can be given as negative or positive.
+  // We use inclination from vertical (or dip magnitude).
+  const dipRad = degToRad(Math.abs(lastSurvey.inclination));
+  const azRad = degToRad(lastSurvey.azimuth);
+
+  // Vertical factor
+  const cosDip = Math.cos(dipRad);
+  if (Math.abs(cosDip) < 1e-4) return null;
+
+  const deltaMD = deltaTVD / cosDip;
+  const endMD = lastSurvey.measuredDepth + deltaMD;
+  const endTVD = target.tvd;
+
+  const deltaNorth = deltaMD * Math.sin(dipRad) * Math.cos(azRad);
+  const deltaEast = deltaMD * Math.sin(dipRad) * Math.sin(azRad);
+
+  const endNorthing = lastSurvey.northing + deltaNorth;
+  const endEasting = lastSurvey.easting + deltaEast;
+
+  const diffNorth = Math.abs(target.northing - endNorthing);
+  const diffEast = Math.abs(target.easting - endEasting);
+  const hd = Math.sqrt(diffNorth * diffNorth + diffEast * diffEast);
+
+  return {
+    md: endMD,
+    tvd: endTVD,
+    northing: endNorthing,
+    easting: endEasting,
+    northDistance: diffNorth,
+    eastDistance: diffEast,
+    horizontalDistance: hd,
+  };
+}
+
+export interface MinDoglegResult {
+  dogleg: number;
+  severity: "normal" | "severe" | "extreme";
+  stateString: string;
+}
+
+export function calculateMinDoglegToTarget(
+  lastSurvey: {
+    northing: number;
+    easting: number;
+    trueVerticalDepth: number;
+    inclination: number;
+    azimuth: number;
+  },
+  target: { northing: number; easting: number; tvd: number },
+  severeThreshold: number = 3.0,
+  extremeThreshold: number = 7.0
+): MinDoglegResult | null {
+  const tvdDiff = target.tvd - lastSurvey.trueVerticalDepth;
+  if (tvdDiff <= 0) return null;
+
+  const dx = target.easting - lastSurvey.easting;
+  const dy = target.northing - lastSurvey.northing;
+  const dz = tvdDiff;
+  const totalDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  if (totalDist < 1e-3) return { dogleg: 0, severity: "normal", stateString: "0.00" };
+
+  // Target direction unit vector
+  const tx = dx / totalDist;
+  const ty = dy / totalDist;
+  const tz = dz / totalDist;
+
+  // Current station tangential unit vector
+  const incRad = degToRad(Math.abs(lastSurvey.inclination));
+  const azRad = degToRad(lastSurvey.azimuth);
+  const sx = Math.sin(incRad) * Math.sin(azRad);
+  const sy = Math.sin(incRad) * Math.cos(azRad);
+  const sz = Math.cos(incRad);
+
+  // Angle alpha between current direction and target vector
+  const dot = Math.max(-1, Math.min(1, sx * tx + sy * ty + sz * tz));
+  const alpha = Math.acos(dot); // radians
+
+  // Minimum dogleg required over circular arc to target
+  // DLS (°/30m) = 2 * sin(alpha) * (180/pi) * 30 / totalDist
+  const doglegVal = Math.abs((2 * Math.sin(alpha) * RAD_TO_DEG * 30) / totalDist);
+  const roundedDL = Math.round(doglegVal * 100) / 100;
+
+  let severity: "normal" | "severe" | "extreme" = "normal";
+  if (roundedDL >= extremeThreshold) {
+    severity = "extreme";
+  } else if (roundedDL >= severeThreshold) {
+    severity = "severe";
+  }
+
+  return {
+    dogleg: roundedDL,
+    severity,
+    stateString: roundedDL.toFixed(2),
+  };
+}

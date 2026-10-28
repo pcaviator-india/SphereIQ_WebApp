@@ -1,7 +1,7 @@
 # SphereIQ — Web App Conversion Plan
 
 **Source project:** `Ezy-Nav.csproj` (.NET 2.0 WinForms desktop app — directional drilling / borehole planner)  
-**Web stack:** Next.js 14 App Router · TypeScript · Prisma · PostgreSQL · NextAuth · Tailwind · Chart.js  
+**Web stack:** Next.js 14 App Router · TypeScript · Prisma · PostgreSQL (Neon) · NextAuth · Tailwind · Three.js (WebGL 3D) · Chart.js (2D)  
 **Last updated:** 2026-10-28
 
 ---
@@ -22,7 +22,7 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Next.js 14 App Router scaffold | ✅ | `app/`, `lib/`, `types/`, `prisma/` |
-| Prisma schema (User, Hole, Collar, Survey, Target, Report, FileUpload, UserSettings) | ✅ | `prisma/schema.prisma` |
+| Prisma schema (User, Hole, Collar, Survey, Target, Report, FileUpload, UserSettings) | ✅ | `prisma/schema.prisma` with `@default("RIG-01")` on `rigId` |
 | NextAuth sign-in page | ✅ | `app/auth/signin/page.tsx` |
 | NextAuth register page | ✅ | `app/auth/register/page.tsx` |
 | Auth middleware (route protection) | ✅ | `middleware.ts` |
@@ -31,119 +31,84 @@
 
 ---
 
-## 2. Holes — CRUD
+## 2. Hole Management Screen (Image 1 Parity)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `GET /api/holes` — list user holes | ✅ | Includes collar, target, surveys |
-| `POST /api/holes` — create hole | ✅ | Validated with zod |
-| `GET /api/holes/[id]` — get hole | ✅ | Includes collar, target, surveys |
-| `PUT /api/holes/[id]` — update hole | ✅ | Schema supports all hole fields |
-| `DELETE /api/holes/[id]` — delete hole | ✅ | Cascades delete in database |
-| Holes list page (`/holes`) | ✅ | `app/holes/page.tsx` |
-| Create hole page (`/holes/create`) | ✅ | `app/holes/create/page.tsx` |
-| **Hole detail page (`/holes/[id]`)** | ✅ | Full layout, collar/target editor, quick actions, delete |
-| Hole edit page (`/holes/[id]/edit`) | ✅ | Pre-filled form updating all fields |
-| Hole delete UI | ✅ | Working delete button with confirm dialog |
+| Top header | ✅ | "Hole Management: [Name/ID]" with book icon |
+| Action buttons toolbar | ✅ | Back Welcome Screen, Edit Details, Edit Survey Data, Import Survey Data, Hole Navigation (green) |
+| Tabbed details panel | ✅ | "Hole Details" and "Chart Options" tabs |
+| Identification card | ✅ | Hole ID, RigID, Location, Area, Client, Surveying Contractor, Drilling Contractor, Created Date |
+| Collar card | ✅ | Easting, Northing, Elevation + quick edit modal |
+| Target card | ✅ | Easting, Northing, TVD + quick edit modal |
+| 3D WebGL Chart integration | ✅ | Three.js canvas with Collar (magenta), Target (orange), Hole Plan (black line), Survey Data (green points) |
+| Scaling warning banner | ✅ | Verbatim desktop text: *"Note: Scaling is not consistant across axis - The hole path may appear exaggerated!"* |
+| Sphere IQ brand mark | ✅ | 3D Intelligence Platform watermark badge |
 
 ---
 
-## 3. Collar & Target
+## 3. Hole Navigation & Planning (Image 2 Parity)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `GET/POST /api/holes/[id]/collar` | ✅ | Upsert support |
-| `GET/POST /api/holes/[id]/target` | ✅ | Upsert support |
-| Collar entry form (inside hole detail) | ✅ | Direct editing & updating |
-| Target entry form (inside hole detail) | ✅ | Direct editing & updating |
+| Hole Navigation screen (`/holes/[id]/navigation`) | ✅ | High-fidelity port of `DrillHolePlanningScreen.cs` |
+| Severe / Extreme dogleg badges | ✅ | Real-time threshold warnings (>3° Severe orange, >7° Extreme red) with radar indicator |
+| Action toolbar | ✅ | Hole Management, Build To Target, Trend Analysis, Extrapolate, Sidetrack Hole, Advanced, Report |
+| Drill hole depth card | ✅ | Real-time MD & TVD of active bottom-hole assembly |
+| End of hole distance card | ✅ | North, East, Horizontal Distance (HD), and TVD deltas to target |
+| Straight path to target TVD card | ✅ | Projected end-of-hole straight path at Target TVD (North, East, HD) |
+| Minimum dogleg to target | ✅ | Calculated minimum curvature dogleg rate (°/30m) required to hit target |
+| Target & Collar coordinates | ✅ | Display of collar and target reference points |
+| 3D visualization | ✅ | Embedded 3D viewer rendering the red Straight Path to Target line alongside plan and surveys |
 
 ---
 
-## 4. Surveys
+## 4. 3D WebGL Graphics (`app/components/Borehole3DChart.tsx`)
 
 | Item | Status | Notes |
 |------|--------|-------|
+| Three.js & OrbitControls integration | ✅ | High performance 3D trajectory engine |
+| Coordinate normalization | ✅ | Auto-centers bounding box with proper vertical aspect ratio |
+| Collar marker | ✅ | Magenta sphere with coordinate hover label |
+| Target marker | ✅ | Orange sphere with coordinate hover label |
+| Hole Plan line | ✅ | Black line connecting Collar (0,0,0) to Target |
+| Survey trajectory | ✅ | Green line connecting computed survey stations with sphere nodes |
+| Straight path line | ✅ | Red line projecting from last survey to target depth |
+| Surface plane | ✅ | Translucent blue ground plane at TVD = 0 |
+| Bounding grid cage | ✅ | 3D cubic coordinate frame with axis tick labels |
+| Mouse interactions | ✅ | Left-drag rotate, right-drag pan, wheel zoom |
+
+---
+
+## 5. Surveys CRUD & Trajectory Calculation
+
+| Item | Status | Notes |
+|------|--------|-------|
+| First survey station (MD = 0) | ✅ | Validated properly with `z.coerce.number().min(0)` |
 | `GET/POST /api/holes/[id]/surveys` | ✅ | Ordered by measured depth |
-| `PUT/DELETE /api/holes/[id]/surveys/[surveyId]` | ✅ | Edit/delete individual survey records |
-| Survey entry / edit / delete page (`/holes/[id]/survey-entry`) | ✅ | Full CRUD UI |
-| Survey calculate API (`POST /api/survey/calculate`) | ✅ | Min-curvature trajectory via `lib/survey-math.ts` |
+| `PUT/DELETE /api/holes/[id]/surveys/[surveyId]` | ✅ | Fully editable stations; auto-recalculates hole trajectory on change |
+| Survey entry / edit / delete page (`/holes/[id]/survey-entry`) | ✅ | Full CRUD UI with step="any" precision and comma-to-dot sanitization |
+| Survey calculate API (`POST /api/survey/calculate`) | ✅ | Minimum curvature trajectory math via `lib/survey-math.ts` |
 
 ---
 
-## 5. Charts
+## 6. Directional Drilling Tools
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Chart.js registered in project | ✅ | Line & Scatter chart support |
-| `lib/chart-utils.ts` | ✅ | Dataset builders |
-| Charts page (`/holes/[id]/charts`) | ✅ | Fixed client/server bug |
-| TVD vs MD chart | ✅ | Inverted depth scale (depth goes down) |
-| Dogleg severity chart | ✅ | DLS (°/30m) line plot |
-| Plan view chart (Northing vs Easting) | ✅ | Horizontal trajectory projection |
-| Vertical section chart (VS vs TVD) | ✅ | Vertical section projection |
-| Data table | ✅ | Full calculated trajectory table (MD, Inc, Az, TVD, N, E, VS, DLS) |
+| Trend Analysis (`/trend-analysis/[id]`) | ✅ | MD range filter, dogleg severity statistics, and trend summaries |
+| Extrapolation (`/extrapolate/[id]`) | ✅ | Last survey reference card, target MD & VS azimuth inputs, projected coordinates output |
+| Build to Target (`/build-to-target`) | ✅ | Minimum build rate & hold path calculation, target form, visual results & warnings |
+| SideTrack Hole (`/holes/[id]/sidetrack`) | ✅ | Kickoff MD input, inherits surveys, copies collar/target, creates branched hole |
+| CSV Import (`/import`) | ✅ | Preview table, automatic column detection, interactive column mapping dropdowns |
 
 ---
 
-## 6. Trend Analysis
+## 7. Reports & Documentation
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `POST /api/trend-analysis` | ✅ | Calculates range stats, averages, DLS trends |
-| Trend analysis page (`/trend-analysis/[id]`) | ✅ | Range filter (From MD / To MD), analysis runner, stats card & DLS trend table |
-
----
-
-## 7. Extrapolation
-
-| Item | Status | Notes |
-|------|--------|-------|
-| `POST /api/extrapolate` | ✅ | Linear/tangential projection with VS |
-| Extrapolation page (`/extrapolate/[id]`) | ✅ | Last survey reference card, target MD & VS azimuth inputs, calculated coordinates output |
-
----
-
-## 8. Build to Target
-
-| Item | Status | Notes |
-|------|--------|-------|
-| `POST /api/build-to-target` | ✅ | Minimum build rate & hold path calculation |
-| Build-to-target page (`/build-to-target`) | ✅ | Fixed React hooks order, added borehole picker, target form, visual results & warnings |
-
----
-
-## 9. SideTrack Hole
-
-| Item | Status | Notes |
-|------|--------|-------|
-| SideTrack hole page (`/holes/[id]/sidetrack`) | ✅ | Kickoff MD input, inherits surveys, copies collar/target, creates branched hole |
-
----
-
-## 10. Import / File Upload
-
-| Item | Status | Notes |
-|------|--------|-------|
-| `POST /api/import/csv` | ✅ | Supports both FormData and JSON, custom column indexing |
-| CSV import frontend (`/import`) | ✅ | File preview, automatic column detection, interactive column mapping dropdowns |
-| `POST /api/upload` | ✅ | File upload backend API |
-
----
-
-## 11. Reports
-
-| Item | Status | Notes |
-|------|--------|-------|
-| `GET/POST /api/reports` | ✅ | Stub CRUD |
-| `GET /api/reports/[id]` | ✅ | |
-| Reports list page (`/reports`) | ✅ | |
-| PDF generation | ⚠️ | PDF url schema present; server-side PDF generator can be wired to PDF library (e.g. `@react-pdf/renderer` or `pdfkit`) |
-
----
-
-## 12. Dashboard & Navigation
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Dashboard (`/`) | ✅ | Metric counters, recent boreholes, quick tools, landing page for guests |
-| Sidebar Navigation | ✅ | Links to Dashboard, Boreholes, Import CSV, Reports, Settings + Sign Out |
+| `GET/POST /api/reports` | ✅ | CRUD reports endpoint |
+| Reports list page (`/reports`) | ✅ | Report browser by hole and type |
+| Report detail (`/reports/[id]`) | ✅ | PDF viewer / download launcher |
+| PDF generation | ⚠️ | PDF url schema present; printable web views available |
