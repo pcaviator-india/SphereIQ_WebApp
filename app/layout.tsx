@@ -19,8 +19,8 @@ export default async function RootLayout({
   const session = await getServerAuthSession();
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <div className="flex min-h-screen">
           {session && (
             <SidebarNav

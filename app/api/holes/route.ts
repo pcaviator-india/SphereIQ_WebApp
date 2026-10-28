@@ -4,14 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const holeCreateSchema = z.object({
-  holeId: z.string().min(1),
-  rigId: z.string().min(1),
-  name: z.string().min(1),
-  location: z.string().optional(),
-  area: z.string().optional(),
-  drillingContractor: z.string().optional(),
-  surveyingContractor: z.string().optional(),
-  client: z.string().optional(),
+  holeId: z.string().min(1, "Hole ID is required"),
+  rigId: z.string().optional().default("RIG-01"),
+  name: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  drillingContractor: z.string().optional().nullable(),
+  surveyingContractor: z.string().optional().nullable(),
+  client: z.string().optional().nullable(),
   status: z.enum(["planned", "drilling", "completed", "archived"]).default("planned"),
 });
 
@@ -21,12 +21,19 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Boreholes are shared with everyone across the system
   const holes = await prisma.hole.findMany({
-    where: { userId: session.user.id },
     include: {
       collar: true,
       surveys: { orderBy: { measuredDepth: "asc" }, take: 5 },
       target: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -44,23 +51,45 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = holeCreateSchema.parse(body);
 
+    const holeName =
+      data.name && data.name.trim().length > 0
+        ? data.name.trim()
+        : data.holeId.trim();
+
+    const rigId =
+      data.rigId && data.rigId.trim().length > 0
+        ? data.rigId.trim()
+        : "RIG-01";
+
     const hole = await prisma.hole.create({
       data: {
-        holeId: data.holeId,
-        rigId: data.rigId,
-        name: data.name,
-        location: data.location,
-        area: data.area,
-        drillingContractor: data.drillingContractor,
-        surveyingContractor: data.surveyingContractor,
-        client: data.client,
+        holeId: data.holeId.trim(),
+        rigId: rigId,
+        name: holeName,
+        location: data.location?.trim() || null,
+        area: data.area?.trim() || null,
+        drillingContractor: data.drillingContractor?.trim() || null,
+        surveyingContractor: data.surveyingContractor?.trim() || null,
+        client: data.client?.trim() || null,
         status: data.status,
         userId: session.user.id,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
     return NextResponse.json({ hole }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (e: any) {
+    console.error("Hole creation error:", e);
+    const errorMessage =
+      e?.errors?.[0]?.message || e?.message || "Invalid request parameters";
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

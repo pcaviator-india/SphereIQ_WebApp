@@ -24,9 +24,22 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const hole = await prisma.hole.findFirst({
-    where: { id: params.id, userId: session.user.id },
-    include: { collar: true, surveys: { orderBy: { measuredDepth: "asc" } }, target: true, fileUploads: true },
+  // Boreholes are shared with everyone across the team
+  const hole = await prisma.hole.findUnique({
+    where: { id: params.id },
+    include: {
+      collar: true,
+      surveys: { orderBy: { measuredDepth: "asc" } },
+      target: true,
+      fileUploads: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
   });
 
   if (!hole) {
@@ -50,13 +63,25 @@ export async function PUT(
     const data = holeUpdateSchema.parse(body);
 
     const hole = await prisma.hole.update({
-      where: { id: params.id, userId: session.user.id },
+      where: { id: params.id },
       data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json({ hole });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || "Invalid request" },
+      { status: 400 }
+    );
   }
 }
 
@@ -69,9 +94,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await prisma.hole.delete({
-    where: { id: params.id, userId: session.user.id },
-  });
+  try {
+    await prisma.hole.delete({
+      where: { id: params.id },
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }

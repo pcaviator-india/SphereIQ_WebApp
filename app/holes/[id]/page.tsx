@@ -41,6 +41,7 @@ interface HoleData {
   drillingContractor: string | null;
   surveyingContractor: string | null;
   client: string | null;
+  user?: { id: string; name: string | null; email: string } | null;
   collar: CollarData | null;
   target: TargetData | null;
   surveys: Survey[];
@@ -375,6 +376,12 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
                   <div className="flex justify-between pt-1 border-t border-gray-100">
                     <span className="font-medium text-gray-500">Created Date:</span>
                     <span>{createdDateStr}</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="font-medium text-gray-500">Created By:</span>
+                    <span className="font-semibold text-blue-700">
+                      {hole.user?.name || hole.user?.email || "Unknown"}
+                    </span>
                   </div>
                 </div>
               </div>

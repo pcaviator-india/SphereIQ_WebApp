@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function CreateHolePage() {
   const router = useRouter();
   const [holeId, setHoleId] = useState("");
-  const [rigId, setRigId] = useState("");
+  const [rigId, setRigId] = useState("RIG-01");
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [area, setArea] = useState("");
@@ -24,18 +24,25 @@ export default function CreateHolePage() {
     setIsLoading(true);
 
     try {
+      const trimmedHoleId = holeId.trim();
+      if (!trimmedHoleId) {
+        setError("Hole ID is required");
+        setIsLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/holes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          holeId,
-          rigId,
-          name,
-          location,
-          area,
-          drillingContractor,
-          surveyingContractor,
-          client,
+          holeId: trimmedHoleId,
+          rigId: rigId.trim() || "RIG-01",
+          name: name.trim() || trimmedHoleId,
+          location: location.trim() || null,
+          area: area.trim() || null,
+          drillingContractor: drillingContractor.trim() || null,
+          surveyingContractor: surveyingContractor.trim() || null,
+          client: client.trim() || null,
           status,
         }),
       });
@@ -49,7 +56,7 @@ export default function CreateHolePage() {
       const data = await res.json();
       router.push(`/holes/${data.hole.id}`);
     } catch {
-      setError("Something went wrong");
+      setError("Something went wrong while connecting to the server");
     } finally {
       setIsLoading(false);
     }
@@ -60,34 +67,40 @@ export default function CreateHolePage() {
       <div className="px-6 py-8">
         <div className="max-w-4xl mx-auto">
           <Link href="/holes" className="text-sm text-blue-600 hover:underline mb-4 inline-block">
-            ← Back to holes
+            ← Back to boreholes
           </Link>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Hole</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Borehole</h1>
           <p className="text-gray-600 mb-8">
-            Enter the required hole details below and press "Create Hole" to continue.{" "}
-            <span className="font-medium">HoleID and RigID are the only required fields; the rest are optional.</span>
+            Enter the hole details below. Boreholes are shared across all team members, and your user account will be shown as the creator.
           </p>
+
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 font-medium">
+              ⚠️ {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Hole ID <span className="text-red-500">(Required)</span>
+                  Hole ID <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., H-001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                   value={holeId}
                   onChange={(e) => setHoleId(e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">The identification code of the drill hole.</p>
+                <p className="text-xs text-gray-500 mt-1">The primary identification code of the borehole.</p>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rig ID <span className="text-red-500">(Required)</span>
+                  Rig ID <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -97,9 +110,24 @@ export default function CreateHolePage() {
                   value={rigId}
                   onChange={(e) => setRigId(e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">The identification code of the drill rig.</p>
+                <p className="text-xs text-gray-500 mt-1">Drill rig identification (default RIG-01).</p>
               </div>
+
               <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hole Name <span className="text-gray-400 font-normal">(Optional — defaults to Hole ID)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Target Shaft 01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">Display label used across charts and reports.</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                 <input
                   type="text"
@@ -108,84 +136,93 @@ export default function CreateHolePage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">The mine site that the hole is being drilled on.</p>
+                <p className="text-xs text-gray-500 mt-1">The mine site or deposit.</p>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
                 <input
                   type="text"
-                  placeholder="e.g., North Area"
+                  placeholder="e.g., North Pit"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">The area of the mine site the hole is being drilled in.</p>
+                <p className="text-xs text-gray-500 mt-1">Area / sector within the site.</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Drilling Contractor</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Drilling Co Ltd"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={drillingContractor}
-                  onChange={(e) => setDrillingContractor(e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">The name of the company drilling the hole.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Surveying Contractor</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Survey Co Ltd"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={surveyingContractor}
-                  onChange={(e) => setSurveyingContractor(e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">The name of the company providing survey's of the hole.</p>
-              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
                 <input
                   type="text"
-                  placeholder="e.g., Client Company"
+                  placeholder="e.g., Exploration Co."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={client}
                   onChange={(e) => setClient(e.target.value)}
                 />
-                <p className="text-xs text-gray-500 mt-1">The name of the company the hole is being drilled for.</p>
+                <p className="text-xs text-gray-500 mt-1">Client organization.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="planned">Planned</option>
+                  <option value="drilling">Drilling</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Current operational status.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Drilling Contractor</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Global Drilling Services"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={drillingContractor}
+                  onChange={(e) => setDrillingContractor(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Surveying Contractor</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Precision Gyro Co."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={surveyingContractor}
+                  onChange={(e) => setSurveyingContractor(e.target.value)}
+                />
               </div>
             </div>
 
-
-
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <Link
+                href="/holes"
+                className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-sm"
               >
-                <option value="planned">Planned</option>
-                <option value="drilling">Drilling</option>
-                <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
-              </select>
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition text-sm flex items-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Creating Borehole...</span>
+                  </>
+                ) : (
+                  <span>Create Borehole</span>
+                )}
+              </button>
             </div>
-
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-100">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full px-5 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-            >
-              {isLoading ? "Creating..." : "Create Hole"}
-            </button>
           </form>
         </div>
       </div>

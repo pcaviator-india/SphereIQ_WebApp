@@ -139,7 +139,14 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
               Hole Navigation:
               <span className="text-blue-600 font-semibold">{hole.name}</span>
             </h1>
-            <p className="text-xs text-gray-500">ID: {hole.holeId} · Rig: {hole.rigId}</p>
+            <p className="text-xs text-gray-500">
+              ID: {hole.holeId} · Rig: {hole.rigId}
+              {hole.user && (
+                <span className="ml-2 text-slate-600 font-medium">
+                  · Creator: {hole.user.name || hole.user.email}
+                </span>
+              )}
+            </p>
           </div>
         </div>
 

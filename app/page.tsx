@@ -37,30 +37,30 @@ export default async function HomePage() {
     );
   }
 
-  // User is authenticated - show rich dashboard
-  const [holes, totalSurveys, totalReports] = await Promise.all([
+  // All boreholes are shared with everyone across the system
+  const [holes, totalSurveys, totalReports, allHoles] = await Promise.all([
     prisma.hole.findMany({
-      where: { userId: session.user.id },
       include: {
         collar: true,
         target: true,
         surveys: { orderBy: { measuredDepth: "desc" }, take: 1 },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       orderBy: { updatedAt: "desc" },
       take: 6,
     }),
-    prisma.survey.count({
-      where: { hole: { userId: session.user.id } },
-    }),
-    prisma.report.count({
-      where: { userId: session.user.id },
+    prisma.survey.count(),
+    prisma.report.count(),
+    prisma.hole.findMany({
+      select: { status: true },
     }),
   ]);
-
-  const allHoles = await prisma.hole.findMany({
-    where: { userId: session.user.id },
-    select: { status: true },
-  });
 
   const plannedCount = allHoles.filter((h) => h.status === "planned").length;
   const drillingCount = allHoles.filter((h) => h.status === "drilling").length;
@@ -101,7 +101,7 @@ export default async function HomePage() {
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <p className="text-xs font-semibold text-gray-400 uppercase">Total Boreholes</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{allHoles.length}</p>
-              <p className="text-xs text-gray-500 mt-1">Active database records</p>
+              <p className="text-xs text-gray-500 mt-1">Shared team records</p>
             </div>
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <p className="text-xs font-semibold text-blue-600 uppercase">Drilling In Progress</p>
@@ -128,7 +128,7 @@ export default async function HomePage() {
                 href="/build-to-target"
                 className="p-4 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-sm transition group"
               >
-                <div className="text-2xl mb-2">🎯</div>
+                <div className="text-2xl mb-2">🔨</div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Build To Target</h3>
                 <p className="text-xs text-gray-500 mt-1">
                   Calculate build rate, kick-off depths, and hold lines to reach target depths.
@@ -153,7 +153,7 @@ export default async function HomePage() {
                 <div className="text-2xl mb-2">📑</div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Reports Engine</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  Access status logs, trajectory analysis, and printable PDF documents.
+                  Access status logs, trajectory analysis, and printable documents.
                 </p>
               </Link>
 
@@ -191,58 +191,69 @@ export default async function HomePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {holes.map((h) => (
-                  <div
-                    key={h.id}
-                    className="p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            h.status === "planned"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : h.status === "drilling"
-                              ? "bg-blue-100 text-blue-700"
-                              : h.status === "completed"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
+                {holes.map((h) => {
+                  const creatorName =
+                    h.user?.name || h.user?.email?.split("@")[0] || "Unknown User";
+
+                  return (
+                    <div
+                      key={h.id}
+                      className="p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              h.status === "planned"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : h.status === "drilling"
+                                ? "bg-blue-100 text-blue-700"
+                                : h.status === "completed"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {h.status}
+                          </span>
+                          <span className="text-xs text-gray-400">Rig: {h.rigId}</span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900">{h.name}</h3>
+                        <p className="text-xs text-gray-500 mb-2">ID: {h.holeId}</p>
+
+                        <div className="text-xs text-gray-600 space-y-1 mb-3">
+                          <p>
+                            <span className="text-gray-400">Location:</span> {h.location || "—"}
+                          </p>
+                          <p>
+                            <span className="text-gray-400">Latest Survey:</span>{" "}
+                            {h.surveys[0] ? `${h.surveys[0].measuredDepth} m` : "None"}
+                          </p>
+                        </div>
+
+                        {/* Creator info */}
+                        <div className="text-[11px] text-gray-500 pt-2 border-t border-gray-100 flex items-center justify-between mb-3">
+                          <span className="text-gray-400">Created by:</span>
+                          <span className="font-medium text-gray-800">{creatorName}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2 border-t border-gray-100">
+                        <Link
+                          href={`/holes/${h.id}`}
+                          className="flex-1 text-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
                         >
-                          {h.status}
-                        </span>
-                        <span className="text-xs text-gray-400">Rig: {h.rigId}</span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">{h.name}</h3>
-                      <p className="text-xs text-gray-500 mb-3">ID: {h.holeId}</p>
-
-                      <div className="text-xs text-gray-600 space-y-1 mb-4">
-                        <p>
-                          <span className="text-gray-400">Location:</span> {h.location || "—"}
-                        </p>
-                        <p>
-                          <span className="text-gray-400">Latest Survey:</span>{" "}
-                          {h.surveys[0] ? `${h.surveys[0].measuredDepth} m` : "None"}
-                        </p>
+                          Management
+                        </Link>
+                        <Link
+                          href={`/holes/${h.id}/navigation`}
+                          className="flex-1 text-center px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-100 transition"
+                        >
+                          🎯 Navigation
+                        </Link>
                       </div>
                     </div>
-
-                    <div className="flex gap-2 pt-2 border-t border-gray-100">
-                      <Link
-                        href={`/holes/${h.id}`}
-                        className="flex-1 text-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
-                      >
-                        Details
-                      </Link>
-                      <Link
-                        href={`/holes/${h.id}/charts`}
-                        className="flex-1 text-center px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition"
-                      >
-                        Charts
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
