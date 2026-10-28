@@ -309,6 +309,33 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
               <div className="text-[10px] text-emerald-100 font-normal">Navi work functions</div>
             </div>
           </Link>
+
+          <div className="hidden lg:block my-2 border-t border-slate-800" />
+
+          {/* Export Options */}
+          <div className="hidden lg:block text-[10px] uppercase font-bold text-slate-400 px-1 pt-1 tracking-wider">
+            Export Data
+          </div>
+
+          <a
+            href={`/api/holes/${params.id}/export/ezn`}
+            download
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700"
+            title="Download original SphereIQ / Ezy-Nav borehole file format (.ezn)"
+          >
+            <span>💾</span>
+            <span>Export .ezn File</span>
+          </a>
+
+          <a
+            href={`/api/holes/${params.id}/export/csv`}
+            download
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700"
+            title="Download survey stations as CSV"
+          >
+            <span>📊</span>
+            <span>Export Surveys (CSV)</span>
+          </a>
         </div>
 
         {/* Center Details Panel matching Screenshot 1 */}

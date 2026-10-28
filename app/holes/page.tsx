@@ -35,12 +35,21 @@ export default async function HolesPage() {
               Shared team borehole repository — view, plan, and analyze all active boreholes.
             </p>
           </div>
-          <Link
-            href="/holes/create"
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
-          >
-            <span className="text-sm font-semibold">+ New Borehole</span>
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/import?tab=ezn"
+              className="px-4 py-2.5 border border-gray-300 text-gray-700 bg-white rounded-lg font-medium hover:bg-gray-50 transition flex items-center gap-2 shadow-xs text-sm"
+            >
+              <span>📁</span>
+              <span>Import .ezn</span>
+            </Link>
+            <Link
+              href="/holes/create"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm text-sm"
+            >
+              <span className="font-semibold">+ New Borehole</span>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

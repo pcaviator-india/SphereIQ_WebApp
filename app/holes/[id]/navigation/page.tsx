@@ -241,6 +241,28 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
             <span>📑</span>
             <span>Report</span>
           </Link>
+
+          <div className="hidden lg:block my-1 border-t border-slate-800" />
+
+          <a
+            href={`/api/holes/${params.id}/export/ezn`}
+            download
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white text-xs font-medium transition"
+            title="Export official SphereIQ .ezn file"
+          >
+            <span>💾</span>
+            <span>Export .ezn</span>
+          </a>
+
+          <a
+            href={`/api/holes/${params.id}/export/csv`}
+            download
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white text-xs font-medium transition"
+            title="Export CSV surveys"
+          >
+            <span>📊</span>
+            <span>Export CSV</span>
+          </a>
         </div>
 
         {/* Status Panel (Matching Screenshot 2 Left Tabs) */}

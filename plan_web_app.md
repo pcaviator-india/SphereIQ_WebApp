@@ -112,3 +112,19 @@
 | Reports list page (`/reports`) | ✅ | Report browser by hole and type |
 | Report detail (`/reports/[id]`) | ✅ | PDF viewer / download launcher |
 | PDF generation | ⚠️ | PDF url schema present; printable web views available |
+
+
+---
+
+## 8. Original Borehole File (.ezn) & CSV Import / Export
+
+| Item | Status | Notes |
+|------|--------|-------|
+| EZN parser & serializer (`lib/ezn-format.ts`) | ✅ | Full `EZN1\n` header + JSON `HoleFileDto` parsing and formatting |
+| Import .ezn API (`POST /api/import/ezn`) | ✅ | 1-click borehole creation (identification, collar, target, surveys + trajectory calc) |
+| Export .ezn API (`GET /api/holes/[id]/export/ezn`) | ✅ | Generates byte-compatible `.ezn` file ready for original desktop app |
+| Export CSV API (`GET /api/holes/[id]/export/csv`) | ✅ | Generates CSV with metadata header comments and survey coordinates |
+| Import Page UI (`/import`) | ✅ | Dual tabs: "SphereIQ / Ezy-Nav File (.ezn)" and "Survey Stations (.csv)" |
+| Hole Management Export UI (`/holes/[id]`) | ✅ | Direct 1-click download buttons for `.ezn` and `.csv` |
+| Hole Navigation Export UI (`/holes/[id]/navigation`) | ✅ | Quick export links in action menu |
+| Holes list quick-import (`/holes`) | ✅ | Direct shortcut button to `Import .ezn` |
