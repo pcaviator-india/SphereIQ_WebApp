@@ -54,6 +54,12 @@ export default async function HoleDetailPage({
               >
                 Back
               </Link>
+              <Link
+                href={`/holes/${hole.id}/survey-entry`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+              >
+                Edit Survey Data
+              </Link>
             </div>
           </div>
 
