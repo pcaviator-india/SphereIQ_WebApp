@@ -43,6 +43,7 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
   const [surveys, setSurveys] = useState<Survey[]>([]);
 
   const [activeTab, setActiveTab] = useState<"status" | "options">("status");
+  const [mobileTab, setMobileTab] = useState<"3d" | "status">("3d");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -181,9 +182,35 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
       </header>
 
       {/* Main Screen Layout */}
+      {/* Mobile View Segmented Switch (visible on < lg screens) */}
+      <div className="lg:hidden flex border-b border-gray-200 bg-white sticky top-0 z-20 shadow-xs">
+        <button
+          onClick={() => setMobileTab("3d")}
+          className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            mobileTab === "3d"
+              ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/40"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <span>🧭</span>
+          <span>3D Trajectory</span>
+        </button>
+        <button
+          onClick={() => setMobileTab("status")}
+          className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            mobileTab === "status"
+              ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/40"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <span>📊</span>
+          <span>Navigation Status</span>
+        </button>
+      </div>
+
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Action Toolbar Buttons (Matching Screenshot 2 Sidebar) */}
-        <div className="w-full lg:w-48 bg-slate-900 p-3 flex flex-row lg:flex-col gap-2 shrink-0 border-r border-slate-800">
+        {/* Left Action Toolbar Buttons (Matching Screenshot 2 Sidebar, scrollable on mobile) */}
+        <div className="w-full lg:w-48 bg-slate-900 p-2.5 lg:p-3 flex flex-row lg:flex-col gap-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800 overflow-x-auto">
           <Link
             href={`/holes/${params.id}`}
             className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-700 text-white text-xs font-medium hover:bg-blue-800 transition"
@@ -266,7 +293,7 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
         </div>
 
         {/* Status Panel (Matching Screenshot 2 Left Tabs) */}
-        <div className="w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto">
+        <div className={`w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto ${mobileTab === "status" ? "block" : "hidden lg:flex"}`}>
           {/* Tabs */}
           <div className="flex border-b border-gray-200 bg-gray-50">
             <button
@@ -452,7 +479,7 @@ export default function HoleNavigationPage({ params }: { params: { id: string } 
         </div>
 
         {/* 3D WebGL Chart Viewport (Matching Screenshot 2) */}
-        <div className="flex-1 p-4 bg-gray-100 flex flex-col min-h-[500px]">
+        <div className={`flex-1 p-2 sm:p-4 bg-gray-100 flex flex-col min-h-[420px] lg:min-h-[500px] ${mobileTab === "3d" ? "block" : "hidden lg:flex"}`}>
           <Borehole3DChart
             collar={collar}
             target={target}

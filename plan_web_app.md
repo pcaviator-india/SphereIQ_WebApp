@@ -121,6 +121,9 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | EZN parser & serializer (`lib/ezn-format.ts`) | ✅ | Full `EZN1\n` header + JSON `HoleFileDto` parsing and formatting |
+| Universal NRBF binary parser (`lib/nrbf-parser.ts`) | ✅ | Pure TypeScript parser for legacy .NET 2.0 BinaryFormatter `.ezn` files (Demo001, Demo002, Demo003) |
+| Dual format detection in `parseEznFile` | ✅ | Automatically detects binary NRBF or EZN1 JSON format |
+| ArrayBuffer binary upload handling | ✅ | Client `readAsArrayBuffer` + API `file.arrayBuffer()` without UTF-8 corruption |
 | Import .ezn API (`POST /api/import/ezn`) | ✅ | 1-click borehole creation (identification, collar, target, surveys + trajectory calc) |
 | Export .ezn API (`GET /api/holes/[id]/export/ezn`) | ✅ | Generates byte-compatible `.ezn` file ready for original desktop app |
 | Export CSV API (`GET /api/holes/[id]/export/csv`) | ✅ | Generates CSV with metadata header comments and survey coordinates |
@@ -128,3 +131,22 @@
 | Hole Management Export UI (`/holes/[id]`) | ✅ | Direct 1-click download buttons for `.ezn` and `.csv` |
 | Hole Navigation Export UI (`/holes/[id]/navigation`) | ✅ | Quick export links in action menu |
 | Holes list quick-import (`/holes`) | ✅ | Direct shortcut button to `Import .ezn` |
+
+---
+
+## 9. Progressive Web App (PWA) & Mobile Responsiveness
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Web App Manifest (`app/manifest.ts`) | ✅ | Standalone PWA configuration with theme/background colors |
+| PWA Icons & Favicon | ✅ | 192x192, 512x512, maskable icons & apple-touch-icon in `public/icons/` |
+| Viewport & iOS Meta Tags (`app/layout.tsx`) | ✅ | `viewport` export, `apple-mobile-web-app-capable`, safe area insets |
+| Service Worker (`public/sw.js`) | ✅ | Offline caching of core assets, Three.js shell, and offline notice |
+| Service Worker Registration & In-App Install Prompt | ✅ | `app/components/PwaRegister.tsx`: in-app "Install App" button & iOS guide |
+| Mobile Navigation Bar & Drawer | ✅ | `app/components/SidebarNav.tsx`: sticky topbar with hamburger (☰) + slide-out drawer on `< md` screens |
+| Responsive Layout (`app/layout.tsx`) | ✅ | `md:ml-56` on desktop, `pt-14 md:pt-0` on mobile |
+| Hole Management Mobile UI (`/holes/[id]`) | ✅ | Mobile segmented view `[🧭 3D Trajectory]` / `[📋 Hole Details]` + scrollable toolbar ribbon |
+| Hole Navigation Mobile UI (`/holes/[id]/navigation`) | ✅ | Mobile segmented view `[🧭 3D Trajectory]` / `[📊 Navigation Status]` |
+| 3D Fullscreen Toggle & Touch Optimization | ✅ | Fullscreen toggle button (`⛶`) + `touch-action: none` orbit controls + mobile collapsible legend |
+| Survey Table Mobile Optimization | ✅ | Sticky frozen `MD` column + `inputMode="decimal"` for mobile keypads |
+

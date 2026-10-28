@@ -64,14 +64,14 @@ export default function CreateHolePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
           <Link href="/holes" className="text-sm text-blue-600 hover:underline mb-4 inline-block">
             ← Back to boreholes
           </Link>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Borehole</h1>
-          <p className="text-gray-600 mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create New Borehole</h1>
+          <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">
             Enter the hole details below. Boreholes are shared across all team members, and your user account will be shown as the creator.
           </p>
 
@@ -81,7 +81,7 @@ export default function CreateHolePage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
+          <form onSubmit={handleSubmit} className="bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

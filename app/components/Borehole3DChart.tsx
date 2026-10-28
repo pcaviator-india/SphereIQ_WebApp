@@ -40,11 +40,26 @@ export default function Borehole3DChart({
   className = "w-full h-full min-h-[500px]",
 }: Borehole3DChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
   const [tooltip, setTooltip] = useState<{
     text: string;
     x: number;
     y: number;
   } | null>(null);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+  };
+
+  useEffect(() => {
+    // Trigger window resize so Three.js camera/renderer adjusts to fullscreen or exit
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isFullscreen]);
 
   const [visibleLayers, setVisibleLayers] = useState({
     collar: true,
@@ -336,50 +351,89 @@ export default function Borehole3DChart({
   }, [collar, target, surveys, straightPath, showStraightPath, visibleLayers]);
 
   return (
-    <div className={`relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
-      {/* 3D Canvas Container */}
-      <div ref={containerRef} className="w-full h-full min-h-[500px]" />
+    <div
+      ref={chartWrapperRef}
+      className={`relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden select-none ${
+        isFullscreen
+          ? "!fixed !inset-0 !z-50 !w-screen !h-screen !rounded-none !border-none !p-0"
+          : className
+      }`}
+    >
+      {/* 3D Canvas Container with touch-action: none */}
+      <div
+        ref={containerRef}
+        className="w-full h-full min-h-[350px] md:min-h-[500px]"
+        style={{ touchAction: "none" }}
+      />
 
-      {/* Floating Legend Top Right (Matching original screenshot) */}
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg border border-gray-200 text-xs shadow-sm space-y-1.5 z-10">
+      {/* Top Floating Action Bar (Controls Hint, Legend Toggle, Fullscreen Toggle) */}
+      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10 gap-2">
+        {/* Controls hint */}
+        <div className="bg-white/85 backdrop-blur-xs px-2.5 py-1 rounded-md border border-gray-200 text-[10px] md:text-xs text-gray-600 shadow-xs pointer-events-auto">
+          <span className="hidden sm:inline">🖱️ Left click drag: Rotate · Right click: Pan · Scroll: Zoom</span>
+          <span className="sm:hidden">👆 Drag: Rotate · ✌️ Pinch: Zoom</span>
+        </div>
+
+        {/* Action Buttons: Legend Toggle (mobile) + Fullscreen */}
+        <div className="flex items-center gap-1.5 pointer-events-auto">
+          <button
+            onClick={() => setShowLegend((prev) => !prev)}
+            className="sm:hidden bg-white/90 backdrop-blur-xs px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-700 shadow-xs hover:bg-gray-50 transition"
+            aria-label="Toggle Legend"
+          >
+            🏷️ Legend
+          </button>
+
+          <button
+            onClick={toggleFullscreen}
+            className="bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-md border border-gray-200 text-xs font-semibold text-gray-800 shadow-xs hover:bg-gray-50 transition flex items-center gap-1"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen 3D View"}
+          >
+            <span>{isFullscreen ? "✕" : "⛶"}</span>
+            <span className="hidden xs:inline">{isFullscreen ? "Exit" : "Fullscreen"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Legend Top Right (Collapsible on mobile, visible on desktop) */}
+      <div
+        className={`absolute top-12 sm:top-12 right-3 bg-white/90 backdrop-blur-xs p-2.5 sm:p-3 rounded-lg border border-gray-200 text-xs shadow-xs space-y-1.5 z-10 transition-all ${
+          showLegend ? "block" : "hidden sm:block"
+        }`}
+      >
         {collar && (
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#d946ef] inline-block shadow-sm"></span>
-            <span className="text-gray-700 font-medium">Collar</span>
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#d946ef] inline-block shadow-xs shrink-0"></span>
+            <span className="text-gray-700 font-medium text-[11px] sm:text-xs">Collar</span>
           </div>
         )}
         {target && (
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#f97316] inline-block shadow-sm"></span>
-            <span className="text-gray-700 font-medium">Target</span>
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#f97316] inline-block shadow-xs shrink-0"></span>
+            <span className="text-gray-700 font-medium text-[11px] sm:text-xs">Target</span>
           </div>
         )}
         {collar && target && (
           <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-gray-900 inline-block"></span>
-            <span className="text-gray-700 font-medium">Hole Plan</span>
+            <span className="w-3.5 h-0.5 bg-gray-900 inline-block shrink-0"></span>
+            <span className="text-gray-700 font-medium text-[11px] sm:text-xs">Hole Plan</span>
           </div>
         )}
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#22c55e] inline-block shadow-sm"></span>
-          <span className="text-gray-700 font-medium">Survey Data</span>
+          <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#22c55e] inline-block shadow-xs shrink-0"></span>
+          <span className="text-gray-700 font-medium text-[11px] sm:text-xs">Survey Data</span>
         </div>
         {showStraightPath && straightPath && (
           <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-red-600 inline-block"></span>
-            <span className="text-gray-700 font-medium">Straight Path To Target TVD</span>
+            <span className="w-3.5 h-0.5 bg-red-600 inline-block shrink-0"></span>
+            <span className="text-gray-700 font-medium text-[11px] sm:text-xs">Straight Path To Target</span>
           </div>
         )}
       </div>
 
-      {/* 3D Controls hint top left */}
-      <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-gray-200 text-[11px] text-gray-500 shadow-sm pointer-events-none z-10">
-        🖱️ Rotate: Left click drag · Pan: Right click drag · Zoom: Scroll wheel
-      </div>
-
-      {/* Bottom Red Warning Note (Matching original desktop app exactly) */}
-      <div className="absolute bottom-2 left-4 right-4 text-center pointer-events-none z-10">
-        <p className="text-xs font-semibold text-red-600/90 tracking-wide drop-shadow-sm">
+      {/* Bottom Red Warning Note (Matching original desktop app) */}
+      <div className="absolute bottom-2 left-2 right-2 text-center pointer-events-none z-10">
+        <p className="text-[10px] sm:text-xs font-semibold text-red-600/90 tracking-wide drop-shadow-xs px-2 py-0.5 bg-white/60 sm:bg-transparent rounded inline-block">
           Note: Scaling is not consistent across axis — The hole path may appear exaggerated!
         </p>
       </div>

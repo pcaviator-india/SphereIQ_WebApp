@@ -194,17 +194,17 @@ export function serializeEznFile(data: {
     SideTrackMD: data.sideTrackMd !== null && data.sideTrackMd !== undefined ? Number(data.sideTrackMd) : -1,
     Collar: data.collar
       ? {
-          Easting: Number(data.collar.easting),
-          Northing: Number(data.collar.northing),
-          Elevation: Number(data.collar.elevation ?? 0),
-        }
+        Easting: Number(data.collar.easting),
+        Northing: Number(data.collar.northing),
+        Elevation: Number(data.collar.elevation ?? 0),
+      }
       : null,
     Target: data.target
       ? {
-          Easting: Number(data.target.easting),
-          Northing: Number(data.target.northing),
-          TVD: Number(data.target.tvd),
-        }
+        Easting: Number(data.target.easting),
+        Northing: Number(data.target.northing),
+        TVD: Number(data.target.tvd),
+      }
       : null,
     Surveys: (data.surveys || []).map((s) => ({
       MD: Number(s.measuredDepth),

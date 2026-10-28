@@ -57,6 +57,7 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
   const [surveys, setSurveys] = useState<Survey[]>([]);
 
   const [activeTab, setActiveTab] = useState<"details" | "chartOptions">("details");
+  const [mobileTab, setMobileTab] = useState<"3d" | "details">("3d");
   const [showEditCollarModal, setShowEditCollarModal] = useState(false);
   const [showEditTargetModal, setShowEditTargetModal] = useState(false);
 
@@ -256,9 +257,35 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
       )}
 
       {/* Main Body */}
+      {/* Mobile View Segmented Switch (visible on < lg screens) */}
+      <div className="lg:hidden flex border-b border-gray-200 bg-white sticky top-0 z-20 shadow-xs">
+        <button
+          onClick={() => setMobileTab("3d")}
+          className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            mobileTab === "3d"
+              ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/40"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <span>🧭</span>
+          <span>3D Trajectory</span>
+        </button>
+        <button
+          onClick={() => setMobileTab("details")}
+          className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+            mobileTab === "details"
+              ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/40"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <span>📋</span>
+          <span>Hole Details</span>
+        </button>
+      </div>
+
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Toolbar (matching Screenshot 1 glossy button strip) */}
-        <div className="w-full lg:w-48 bg-slate-900 p-3 flex flex-row lg:flex-col gap-2 shrink-0 border-r border-slate-800">
+        {/* Left Toolbar (matching Screenshot 1 glossy button strip, scrollable horizontally on mobile) */}
+        <div className="w-full lg:w-48 bg-slate-900 p-2.5 lg:p-3 flex flex-row lg:flex-col gap-2 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800 overflow-x-auto">
           <Link
             href="/"
             className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-sm transition"
@@ -339,7 +366,7 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
         </div>
 
         {/* Center Details Panel matching Screenshot 1 */}
-        <div className="w-full lg:w-72 bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto">
+        <div className={`w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto ${mobileTab === "details" ? "block" : "hidden lg:flex"}`}>
           {/* Tabs */}
           <div className="flex border-b border-gray-200 bg-gray-50 text-xs font-semibold">
             <button
@@ -559,7 +586,7 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
         </div>
 
         {/* Right 3D Chart View matching Screenshot 1 */}
-        <div className="flex-1 bg-white relative flex flex-col min-h-[550px] overflow-hidden">
+        <div className={`flex-1 bg-white relative flex flex-col min-h-[420px] lg:min-h-[550px] overflow-hidden ${mobileTab === "3d" ? "block" : "hidden lg:flex"}`}>
           {/* Top Right Legend (Desktop matching) */}
           <div className="absolute top-3 right-4 z-10 bg-white/90 backdrop-blur-xs border border-gray-200 rounded p-2 text-xs space-y-1 shadow-sm">
             <div className="flex items-center gap-2">

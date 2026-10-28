@@ -225,9 +225,8 @@ export default function SurveyEntryPage({ params }: { params: { id: string } }) 
                   Measured Depth (m) *
                 </label>
                 <input
-                  type="number"
-                  step="any"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   required
                   placeholder="e.g. 100.5"
                   value={md}
@@ -241,8 +240,8 @@ export default function SurveyEntryPage({ params }: { params: { id: string } }) 
                   Inclination / Dip (°) *
                 </label>
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   required
                   placeholder="e.g. -72.6"
                   value={inc}
@@ -256,10 +255,8 @@ export default function SurveyEntryPage({ params }: { params: { id: string } }) 
                   Azimuth / Bearing (°) *
                 </label>
                 <input
-                  type="number"
-                  step="any"
-                  min="0"
-                  max="360"
+                  type="text"
+                  inputMode="decimal"
                   required
                   placeholder="e.g. 277.0"
                   value={az}
@@ -314,11 +311,11 @@ export default function SurveyEntryPage({ params }: { params: { id: string } }) 
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
+              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                <table className="w-full text-left border-collapse text-sm min-w-[550px]">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase">MD (m)</th>
+                      <th className="py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase sticky left-0 bg-gray-50 z-10 shadow-xs">MD (m)</th>
                       <th className="py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase">Inc (°)</th>
                       <th className="py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase">Az (°)</th>
                       <th className="py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase">TVD (m)</th>
@@ -337,7 +334,7 @@ export default function SurveyEntryPage({ params }: { params: { id: string } }) 
                             isCurrent ? "bg-blue-50" : "hover:bg-gray-50"
                           }`}
                         >
-                          <td className="py-2.5 px-3 font-medium text-gray-900">
+                          <td className={`py-2.5 px-3 font-semibold text-gray-900 sticky left-0 z-10 shadow-xs ${isCurrent ? "bg-blue-50" : "bg-white"}`}>
                             {Number(s.measuredDepth).toFixed(2)}
                           </td>
                           <td className="py-2.5 px-3 text-gray-700">

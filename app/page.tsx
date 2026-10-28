@@ -68,7 +68,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto">
           {/* Welcome Banner */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">

@@ -198,7 +198,7 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
           <Link href="/holes" className="text-sm text-blue-600 hover:underline mb-4 inline-block">
             ← Back to boreholes
@@ -221,11 +221,10 @@ export default function ImportPage() {
                 setError("");
                 setSuccess("");
               }}
-              className={`pb-3 px-4 font-semibold text-sm border-b-2 transition flex items-center gap-2 ${
-                activeTab === "ezn"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className={`pb-3 px-4 font-semibold text-sm border-b-2 transition flex items-center gap-2 ${activeTab === "ezn"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
             >
               <span>📁</span>
               <span>SphereIQ / Ezy-Nav File (.ezn)</span>
@@ -240,11 +239,10 @@ export default function ImportPage() {
                 setError("");
                 setSuccess("");
               }}
-              className={`pb-3 px-4 font-semibold text-sm border-b-2 transition flex items-center gap-2 ${
-                activeTab === "csv"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className={`pb-3 px-4 font-semibold text-sm border-b-2 transition flex items-center gap-2 ${activeTab === "csv"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
             >
               <span>📊</span>
               <span>Survey Stations (.csv)</span>
@@ -492,15 +490,14 @@ export default function ImportPage() {
                                 {headers.map((h, i) => (
                                   <th
                                     key={i}
-                                    className={`px-3 py-2 ${
-                                      i === mdCol
-                                        ? "bg-blue-100 text-blue-900"
-                                        : i === incCol
+                                    className={`px-3 py-2 ${i === mdCol
+                                      ? "bg-blue-100 text-blue-900"
+                                      : i === incCol
                                         ? "bg-amber-100 text-amber-900"
                                         : i === azCol
-                                        ? "bg-green-100 text-green-900"
-                                        : ""
-                                    }`}
+                                          ? "bg-green-100 text-green-900"
+                                          : ""
+                                      }`}
                                   >
                                     {h}
                                     {i === mdCol && " (MD)"}
