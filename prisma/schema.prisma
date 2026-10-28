@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  holes         Hole[]
+  sessions      Session[]
+  accounts      Account[]
+  fileUploads   FileUpload[]
+}
+
+model Hole {
+  id          String   @id @default(uuid())
+  holeId      String   // e.g., "H-001"
+  name        String
+  status      String   @default("planned") // planned | drilling | completed | archived
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collar      Collar?
+  surveys     Survey[]
+  target      Target?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Collar {
+  id          String   @id @default(uuid())
+  holeId      String   @unique
+  hole        Hole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  northing    Decimal
+  easting     Decimal
+  elevation   Decimal
+  totalDepth  Decimal?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Survey {
+  id                String   @id @default(uuid())
+  holeId            String
+  hole              Hole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  measuredDepth     Decimal
+  inclination       Decimal
+  azimuth           Decimal
+  trueVerticalDepth Decimal?
+  northing          Decimal?
+  easting           Decimal?
+  verticalSection   Decimal?
+  createdAt         DateTime @default(now())
+}
+
+model Target {
+  id        String   @id @default(uuid())
+  holeId    String   @unique
+  hole      Hole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  tvd       Decimal
+  northing  Decimal
+  easting   Decimal
+  createdAt DateTime @default(now())
+}
+
+model FileUpload {
+  id         String   @id @default(uuid())
+  holeId     String?
+  hole       Hole?    @relation(fields: [holeId], references: [id], onDelete: SetNull)
+  fileName   String
+  fileUrl    String
+  mimeType   String
+  size       Int
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  uploadedAt DateTime @default(now())
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  holeId    String
+  hole      Hole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  title     String
+  type      String   // build | trend | extrapolate | status
+  pdfUrl    String?
+  createdAt DateTime @default(now())
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme     String   @default("light")
+  units     String   @default("metric")
+  updatedAt DateTime @updatedAt
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @text
+  access_token      String? @text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

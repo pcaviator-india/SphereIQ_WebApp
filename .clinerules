@@ -1,0 +1,39 @@
+# SphereIQ Web App — Agent Rules
+
+## Project Context
+- Converting legacy C# WinForms desktop app (SphereIQ / Ezy-Nav) into a cross-platform web application.
+- Source C# project remains in the same root (`Ezy-Nav.csproj`, `EzyPlan_Interface_V2/`). Do **not** modify or delete C# source unless intentionally porting logic.
+- Target deployment: **Vercel**. Target database: **Neon (PostgreSQL)**.
+
+## Tech Stack (Fixed — do not deviate)
+- Framework: Next.js 14+ (App Router), TypeScript
+- Styling: Tailwind CSS
+- Database: Neon Postgres (serverless)
+- ORM: Prisma
+- Auth: NextAuth.js (credentials + session)
+- Charts: Chart.js / react-chartjs-2
+- File storage: Vercel Blob or S3 (for hole file uploads)
+- Language: TypeScript only (no C# in the web app)
+
+## Hard Rules
+1. No `System.Windows.Forms`, no WinForms, no GDI+, no .NET DLLs in web code.
+2. No direct local file system access. All file uploads go through API routes to object storage.
+3. All C# business logic must be ported by hand to TypeScript; no compiling C# on the server.
+4. Responsive, mobile-friendly UI.
+5. API-first design: separate frontend UI from backend API routes within Next.js.
+6. Secrets only in `.env.local` / `.env.example`; never commit real values.
+7. Conventional commit messages (`feat:`, `fix:`, `chore:`, etc.).
+8. Each coding step maps to a phase in `plan_web_app.md`.
+
+## Source Code Reference (C# legacy)
+- Port from: `Procedure_*.cs`, `Body_*.cs`, `Utility.cs`, `Report_*` (calculation logic only), `EzyPlanData` models.
+- Do **not** reference `..\rstudio\2iC Australia\Ezy-Nav\` DLLs.
+
+## Phases (from plan_web_app.md)
+1. Project setup & database schema ← CURRENT
+2. Authentication & user management
+3. Hole file upload & data models
+4. Drilling math & survey calculations
+5. UI wizard screens (Welcome, Create Hole, Planning, etc.)
+6. Reports & charts
+7. Testing & Vercel deployment
