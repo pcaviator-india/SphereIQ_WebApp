@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,24 +20,23 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) {
-        setError("Email already registered");
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
         return;
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      await prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-          role: "user",
-        },
-      });
-
       setSuccess("Account created successfully. You can now sign in.");
+      setTimeout(() => {
+        router.push("/auth/signin");
+      }, 1500);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
