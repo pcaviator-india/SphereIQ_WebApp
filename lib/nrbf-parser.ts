@@ -17,6 +17,7 @@
 import type { EznHoleFileDto } from "./ezn-format";
 
 const textDecoder = new TextDecoder("utf-8");
+const textEncoder = new TextEncoder();
 
 function toUint8Array(data: Uint8Array | ArrayBuffer | Buffer): Uint8Array {
   if (data instanceof Uint8Array) {
@@ -302,6 +303,13 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
   const writeInt32LE = (v: number) => {
     buf.push(v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >> 24) & 0xff);
   };
+  const writeInt64LE = (n: number | bigint) => {
+    const big = typeof n === "bigint" ? n : BigInt(n);
+    const lo = Number(big & BigInt("0xFFFFFFFF"));
+    const hi = Number((big >> BigInt(32)) & BigInt("0xFFFFFFFF"));
+    writeInt32LE(lo);
+    writeInt32LE(hi);
+  };
   const writeLenPrefixedStr = (s: string) => {
     const bytes = new TextEncoder().encode(s);
     let len = bytes.length;
@@ -314,8 +322,10 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
     for (let i = 0; i < bytes.length; i++) writeByte(bytes[i]);
   };
 
-  writeByte(0x00); writeByte(0x01); // ROOT
-  writeInt32LE(0); writeInt32LE(1); writeInt32LE(0);
+  // SerializationHeaderRecord
+  writeByte(0x00); writeByte(0x01); writeByte(0x00); writeByte(0x00);
+  writeByte(0x00); writeByte(0xFF); writeByte(0xFF); writeByte(0xFF); writeByte(0xFF);
+  writeInt64LE(1); // version 1.0
 
   writeByte(0x0C); writeInt32LE(2);
   writeLenPrefixedStr("EzyPlanStorage, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
