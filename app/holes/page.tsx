@@ -1,6 +1,7 @@
 import { getServerAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { HoleDeleteButton } from "@/app/components/HoleDeleteButton";
 
 export default async function HolesPage() {
   const session = await getServerAuthSession();
@@ -101,6 +102,7 @@ export default async function HolesPage() {
                       >
                         ↗
                       </Link>
+                      <HoleDeleteButton holeId={hole.id} holeName={hole.name} />
                     </div>
 
                     <h2 className="text-xl font-bold text-gray-900 mb-1">
