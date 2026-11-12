@@ -190,14 +190,14 @@ export function serializeEznFile(data: {
   if (format === "nrbf") {
     const nrbfDto: EznHoleFileDto = {
       HoleID: data.holeId,
-      RigID: data.rigId ?? null,
+      RigID: data.rigId ?? undefined,
       Location: data.location ?? null,
       Area: data.area ?? null,
       DrillingContractor: data.drillingContractor ?? null,
       SurveyingContractor: data.surveyingContractor ?? null,
       Client: data.client ?? null,
-      CreatedDate: data.createdAt ?? null,
-      SideTrackMD: data.sideTrackMd ?? null,
+      CreatedDate: data.createdAt ?? undefined,
+      SideTrackMD: data.sideTrackMd ?? undefined,
       Collar: data.collar
         ? {
             Easting: Number(data.collar.easting ?? 0),
