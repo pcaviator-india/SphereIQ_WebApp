@@ -1,5 +1,11 @@
+import Decimal from "decimal.js";
+
 /**
  * Survey Math Library — ported from EzyNavMath.dll minimum curvature logic
+ *
+ * Uses Decimal.js for all arithmetic to match C#'s `decimal` type precision
+ * (28-29 significant digits vs JavaScript's 15-17). Trigonometric functions
+ * still use native Math (IEEE 754 double), which is identical in both C# and JS.
  */
 
 export interface SurveyStation {
@@ -21,6 +27,9 @@ export interface Collar {
   easting: number;
   elevation: number;
 }
+
+// 20 significant digits — more than enough to match C# decimal
+Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP });
 
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
@@ -57,12 +66,12 @@ export function calculateTrajectory(
 
   if (stations.length === 0) return results;
 
-  let prevMD = 0;
+  let prevMD = new Decimal(0);
   let prevInc = 0;
   let prevAz = 0;
-  let tvd = 0;
-  let northing = collar.northing;
-  let easting = collar.easting;
+  let tvd = new Decimal(0);
+  let northing = new Decimal(collar.northing);
+  let easting = new Decimal(collar.easting);
 
   for (let i = 0; i < stations.length; i++) {
     const station = stations[i];
@@ -78,34 +87,50 @@ export function calculateTrajectory(
       az = 0;
     }
 
-    const deltaMD = md - prevMD;
+    const deltaMD = new Decimal(md).minus(prevMD);
+    const deltaMDNum = deltaMD.toNumber();
 
     const avgInc = degToRad((prevInc + inc) / 2);
     const avgAz = degToRad((prevAz + az) / 2);
     const dl = doglegAngle(
-      { measuredDepth: prevMD, inclination: prevInc, azimuth: prevAz },
+      { measuredDepth: prevMD.toNumber(), inclination: prevInc, azimuth: prevAz },
       { measuredDepth: md, inclination: inc, azimuth: az }
     );
     const rf = ratioFactor(dl);
 
-    tvd += deltaMD * Math.cos(avgInc);
-    northing += deltaMD * Math.sin(avgInc) * Math.cos(avgAz) * rf;
-    easting += deltaMD * Math.sin(avgInc) * Math.sin(avgAz) * rf;
+    // TVD: no ratio factor applied
+    const tvdIncrement = new Decimal(deltaMDNum).times(Math.cos(avgInc));
+    tvd = tvd.plus(tvdIncrement);
 
-    const vs =
-      (northing - collar.northing) * Math.cos(degToRad(vsAzimuth)) +
-      (easting - collar.easting) * Math.sin(degToRad(vsAzimuth));
+    // Northing and Easting: ratio factor applied
+    const northIncrement = new Decimal(deltaMDNum)
+      .times(Math.sin(avgInc))
+      .times(Math.cos(avgAz))
+      .times(rf);
+    const eastIncrement = new Decimal(deltaMDNum)
+      .times(Math.sin(avgInc))
+      .times(Math.sin(avgAz))
+      .times(rf);
+
+    northing = northing.plus(northIncrement);
+    easting = easting.plus(eastIncrement);
+
+    const vsNum = northing
+      .minus(collar.northing)
+      .times(Math.cos(degToRad(vsAzimuth)))
+      .plus(easting.minus(collar.easting).times(Math.sin(degToRad(vsAzimuth))))
+      .toNumber();
 
     results.push({
       ...station,
-      trueVerticalDepth: tvd,
-      northing,
-      easting,
-      verticalSection: vs,
-      doglegSeverity: (dl * RAD_TO_DEG * 30) / Math.max(deltaMD, 0.1),
+      trueVerticalDepth: tvd.toNumber(),
+      northing: northing.toNumber(),
+      easting: easting.toNumber(),
+      verticalSection: vsNum,
+      doglegSeverity: (dl * RAD_TO_DEG * 30) / Math.max(deltaMDNum, 0.1),
     });
 
-    prevMD = md;
+    prevMD = new Decimal(md);
     prevInc = inc;
     prevAz = az;
   }
