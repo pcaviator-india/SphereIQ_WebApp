@@ -272,3 +272,130 @@ export function parseNrbfEznFile(data: Uint8Array | ArrayBuffer | Buffer): EznHo
     Surveys: surveys,
   };
 }
+
+function writeInt32LE(buf: Uint8Array, pos: number, value: number): number {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  view.setUint32(pos, value, true);
+  return pos + 4;
+}
+
+function writeLenPrefixedStr(buf: Uint8Array, pos: number, s: string | null): number {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(s ?? "");
+  if (bytes.length === 0) {
+    buf[pos++] = 0x00;
+    return pos;
+  }
+  let len = bytes.length;
+  while (true) {
+    let b = len & 0x7f;
+    len >>= 7;
+    if (len !== 0) { buf[pos++] = b | 0x80; } else { buf[pos++] = b; break; }
+  }
+  buf.set(bytes, pos);
+  return pos + bytes.length;
+}
+
+export function serializeNrbfEznFile(data: {
+  holeId: string; rigId?: string | null; location?: string | null;
+  area?: string | null; drillingContractor?: string | null;
+  surveyingContractor?: string | null; client?: string | null;
+  createdAt?: string | Date | null; sideTrackMd?: number | null;
+  collar?: { easting?: number | string | null; northing?: number | string | null; elevation?: number | string | null } | null;
+  target?: { easting?: number | string | null; northing?: number | string | null; tvd?: number | string | null } | null;
+  surveys?: Array<{ measuredDepth?: number | string; dip?: number | string; azimuth?: number | string }>;
+}): Uint8Array {
+  const enc = new TextEncoder();
+  const estimated = 2048;
+  const buf = new Uint8Array(estimated);
+  let pos = 0;
+
+  buf[pos++] = 0x00; buf[pos++] = 0x01; buf[pos++] = 0x00; buf[pos++] = 0x00;
+  buf[pos++] = 0x00; buf[pos++] = 0xff; buf[pos++] = 0xff; buf[pos++] = 0xff; buf[pos++] = 0xff;
+  pos = writeInt32LE(buf, pos, 1);
+  pos = writeInt32LE(buf, pos, 1);
+  pos = writeInt32LE(buf, pos, 12);
+  pos = writeInt32LE(buf, pos, 0);
+
+  buf[pos++] = 0x02;
+  pos = writeInt32LE(buf, pos, 1);
+  pos = writeLenPrefixedStr(buf, pos, "EzyPlanStorage.DrillHoleFile");
+
+  const drillMembers = ["m_client", "m_createdDate", "m_sideTrackMD", "HoleID", "RigID", "Location", "Area", "DrillingContractor", "SurveyingContractor", "Client"];
+  pos = writeInt32LE(buf, pos, drillMembers.length);
+  for (const m of drillMembers) { pos = writeLenPrefixedStr(buf, pos, m); }
+  pos = writeInt32LE(buf, pos, 3);
+  for (let i = 0; i < drillMembers.length; i++) buf[pos++] = 0x06;
+
+  buf[pos++] = 0x06;
+  pos = writeInt32LE(buf, pos, 2);
+  pos = writeLenPrefixedStr(buf, pos, data.client ?? "");
+
+  // Ref pattern the parser searches for: 0x09 0x04 0x00 0x00 0x00
+  buf[pos++] = 0x09;
+  pos = writeInt32LE(buf, pos, 4);
+
+  // Remaining skip bytes to make 15 total after the 0x09 tag
+  for (let i = 0; i < 10; i++) buf[pos++] = 0x00;
+  buf[pos++] = 0x0a;
+
+  const created = data.createdAt ? new Date(data.createdAt) : new Date();
+  const ticks = BigInt(Math.floor(created.getTime() * 10000)) + BigInt("621355968000000000");
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  view.setUint32(pos, Number(ticks & BigInt("0xFFFFFFFF")), true); pos += 4;
+  view.setUint32(pos, Number((ticks >> BigInt(32)) & BigInt("0xFFFFFFFF")), true); pos += 4;
+
+  pos = writeLenPrefixedStr(buf, pos, String(data.sideTrackMd ?? -1));
+  const holeMembers = [
+    data.holeId, data.rigId ?? "RIG-01", data.location ?? "", data.area ?? "",
+    data.drillingContractor ?? "", data.surveyingContractor ?? "", data.client ?? ""
+  ];
+  let hmObjId = 10;
+  for (const v of holeMembers) {
+    buf[pos++] = 0x06;
+    pos = writeInt32LE(buf, pos, hmObjId++);
+    pos = writeLenPrefixedStr(buf, pos, v);
+  }
+
+  buf[pos++] = 0x02;
+  pos = writeInt32LE(buf, pos, 3);
+  pos = writeLenPrefixedStr(buf, pos, "EzyPlanData.Target");
+  const targetMembers = ["m_Easting", "m_Northing", "m_TVD"];
+  pos = writeInt32LE(buf, pos, targetMembers.length);
+  for (const m of targetMembers) { pos = writeLenPrefixedStr(buf, pos, m); }
+  pos = writeInt32LE(buf, pos, 3);
+  for (let i = 0; i < targetMembers.length; i++) buf[pos++] = 0x06;
+  const targetVals = [String(data.target?.easting ?? 0), String(data.target?.northing ?? 0), String(data.target?.tvd ?? 0)];
+  for (const v of targetVals) { pos = writeLenPrefixedStr(buf, pos, v); }
+
+  buf[pos++] = 0x02;
+  pos = writeInt32LE(buf, pos, 2);
+  pos = writeLenPrefixedStr(buf, pos, "EzyPlanData.Collar");
+  const collarMembers = ["m_northing", "m_easting"];
+  pos = writeInt32LE(buf, pos, collarMembers.length);
+  for (const m of collarMembers) { pos = writeLenPrefixedStr(buf, pos, m); }
+  pos = writeInt32LE(buf, pos, 3);
+  for (let i = 0; i < collarMembers.length; i++) buf[pos++] = 0x06;
+  const collarVals = [String(data.collar?.northing ?? 0), String(data.collar?.easting ?? 0)];
+  for (const v of collarVals) { pos = writeLenPrefixedStr(buf, pos, v); }
+
+  const surveys = data.surveys || [];
+  for (let si = 0; si < surveys.length; si++) {
+    const s = surveys[si];
+    const objId = 4 + si;
+    buf[pos++] = 0x02;
+    pos = writeInt32LE(buf, pos, objId);
+    pos = writeLenPrefixedStr(buf, pos, "EzyPlanData.Survey");
+    const surveyMembers = ["m_measuredDepth", "m_dip", "m_azimuth", "PropertyChangedEventHandler"];
+    pos = writeInt32LE(buf, pos, surveyMembers.length);
+    for (const m of surveyMembers) { pos = writeLenPrefixedStr(buf, pos, m); }
+    pos = writeInt32LE(buf, pos, 3);
+    for (let i = 0; i < surveyMembers.length; i++) buf[pos++] = 0x06;
+    const surveyVals = [String(s.measuredDepth ?? 0), String(s.dip ?? 0), String(s.azimuth ?? 0)];
+    for (const v of surveyVals) { pos = writeLenPrefixedStr(buf, pos, v); }
+    buf[pos++] = 0x0a;
+  }
+
+  buf[pos++] = 0x0b;
+  return buf.subarray(0, pos);
+}

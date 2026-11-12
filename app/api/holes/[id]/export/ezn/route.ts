@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { serializeEznFile } from "@/lib/ezn-format";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerAuthSession();
@@ -25,7 +25,10 @@ export async function GET(
     return NextResponse.json({ error: "Hole not found" }, { status: 404 });
   }
 
-  const eznString = serializeEznFile({
+  const { searchParams } = new URL(req.url);
+  const format = (searchParams.get("format") ?? "nrbf") as "nrbf" | "json";
+
+  const eznResult = serializeEznFile({
     holeId: hole.holeId,
     rigId: hole.rigId,
     name: hole.name,
@@ -54,13 +57,17 @@ export async function GET(
       inclination: Number(s.inclination),
       azimuth: Number(s.azimuth),
     })),
+    format,
   });
 
   const safeFilename = `${hole.holeId.replace(/[^a-zA-Z0-9_-]/g, "_")}.ezn`;
 
-  return new NextResponse(eznString, {
+  const isBinary = format === "nrbf";
+  const body = isBinary && eznResult instanceof Uint8Array ? Buffer.from(eznResult) : eznResult;
+
+  return new NextResponse(body as unknown as BodyInit, {
     headers: {
-      "Content-Type": "application/octet-stream",
+      "Content-Type": isBinary ? "application/octet-stream" : "application/json",
       "Content-Disposition": `attachment; filename="${safeFilename}"`,
     },
   });

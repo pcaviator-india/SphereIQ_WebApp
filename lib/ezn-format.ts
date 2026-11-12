@@ -5,7 +5,7 @@
  * - JSON payload representing HoleFileDto
  */
 
-import { isNrbfBinary, parseNrbfEznFile } from "./nrbf-parser";
+import { isNrbfBinary, parseNrbfEznFile, serializeNrbfEznFile } from "./nrbf-parser";
 
 export interface EznSurveyRow {
   MD: number;
@@ -163,6 +163,8 @@ export function parseEznFile(content: string | Buffer | Uint8Array | ArrayBuffer
  * Serializes borehole data into an official SphereIQ .ezn binary/text buffer.
  * Starts with "EZN1\n" followed by JSON.
  */
+export type EznSerializeFormat = "nrbf" | "json";
+
 export function serializeEznFile(data: {
   holeId: string;
   rigId?: string | null;
@@ -181,7 +183,43 @@ export function serializeEznFile(data: {
     inclination: number | string;
     azimuth: number | string;
   }>;
-}): string {
+  format?: EznSerializeFormat;
+}): string | Uint8Array {
+  const format = data.format ?? "nrbf";
+
+  if (format === "nrbf") {
+    return serializeNrbfEznFile({
+      holeId: data.holeId,
+      rigId: data.rigId ?? null,
+      location: data.location ?? null,
+      area: data.area ?? null,
+      drillingContractor: data.drillingContractor ?? null,
+      surveyingContractor: data.surveyingContractor ?? null,
+      client: data.client ?? null,
+      createdAt: data.createdAt ?? null,
+      sideTrackMd: data.sideTrackMd ?? null,
+      collar: data.collar
+        ? {
+            easting: String(data.collar.easting ?? 0),
+            northing: String(data.collar.northing ?? 0),
+            elevation: data.collar.elevation !== undefined ? String(data.collar.elevation) : undefined,
+          }
+        : null,
+      target: data.target
+        ? {
+            easting: String(data.target.easting ?? 0),
+            northing: String(data.target.northing ?? 0),
+            tvd: String(data.target.tvd ?? 0),
+          }
+        : null,
+      surveys: (data.surveys || []).map((s) => ({
+        measuredDepth: s.measuredDepth,
+        dip: s.inclination,
+        azimuth: s.azimuth,
+      })),
+    });
+  }
+
   const dto: EznHoleFileDto = {
     HoleID: data.holeId,
     RigID: data.rigId || "RIG-01",
