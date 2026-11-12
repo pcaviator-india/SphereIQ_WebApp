@@ -327,6 +327,11 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
   writeByte(0x00); writeByte(0xFF); writeByte(0xFF); writeByte(0xFF); writeByte(0xFF);
   writeInt64LE(1); // version 1.0
 
+  // SerializationHeaderRecord
+  writeByte(0x00); writeByte(0x01); writeByte(0x00); writeByte(0x00); writeByte(0x00);
+  writeByte(0xFF); writeByte(0xFF); writeByte(0xFF); writeByte(0xFF);
+  writeInt64LE(1);
+
   writeByte(0x0C); writeInt32LE(2);
   writeLenPrefixedStr("EzyPlanStorage, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
