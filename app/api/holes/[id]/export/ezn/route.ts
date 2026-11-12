@@ -26,7 +26,7 @@ export async function GET(
   }
 
   const { searchParams } = new URL(req.url);
-  const format = (searchParams.get("format") ?? "json") as "nrbf" | "json";
+  const format = (searchParams.get("format") ?? "nrbf") as "nrbf" | "json";
 
   const eznResult = serializeEznFile({
     holeId: hole.holeId,

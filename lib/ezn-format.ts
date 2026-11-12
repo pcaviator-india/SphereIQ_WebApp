@@ -185,7 +185,7 @@ export function serializeEznFile(data: {
   }>;
   format?: EznSerializeFormat;
 }): string | Uint8Array {
-  const format = data.format ?? "json";
+  const format = data.format ?? "nrbf";
 
   if (format === "nrbf") {
     const nrbfDto: EznHoleFileDto = {
@@ -200,17 +200,17 @@ export function serializeEznFile(data: {
       SideTrackMD: data.sideTrackMd ?? undefined,
       Collar: data.collar
         ? {
-            Easting: Number(data.collar.easting ?? 0),
-            Northing: Number(data.collar.northing ?? 0),
-            Elevation: data.collar.elevation !== undefined ? Number(data.collar.elevation) : undefined,
-          }
+          Easting: Number(data.collar.easting ?? 0),
+          Northing: Number(data.collar.northing ?? 0),
+          Elevation: data.collar.elevation !== undefined ? Number(data.collar.elevation) : undefined,
+        }
         : null,
       Target: data.target
         ? {
-            Easting: Number(data.target.easting ?? 0),
-            Northing: Number(data.target.northing ?? 0),
-            TVD: Number(data.target.tvd ?? 0),
-          }
+          Easting: Number(data.target.easting ?? 0),
+          Northing: Number(data.target.northing ?? 0),
+          TVD: Number(data.target.tvd ?? 0),
+        }
         : null,
       Surveys: (data.surveys || []).map((s) => ({
         MD: Number(s.measuredDepth),

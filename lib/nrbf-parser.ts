@@ -1,4 +1,4 @@
-﻿/**
+/**
  * NRBF (Microsoft .NET Remoting Binary Format) Parser
  *
  * Universal parser (browser, edge, and Node.js) for legacy
@@ -399,57 +399,117 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
   writeDecimalStr(data.Collar?.Easting  ?? 0);
   writeDecimalStr(data.Collar?.Northing ?? 0);
 
-  // 8. SurveyList+Data (0x05, objId=14, libId=3)
-  //    1 member "items" = reference to survey ObjectArray (objId=15)
-  writeByte(0x05); writeInt32LE(14);
+  // 8. SurveyList+Data (objId=14, libId=3)
+  writeByte(0x05);
+  writeInt32LE(14);
   writeLenStr("EzyPlanData.SurveyList+Data");
   writeInt32LE(1);
   writeLenStr("items");
-  writeByte(0x04); // Class
-  writeLenStr("EzyPlanData.Survey[]"); writeInt32LE(3);
-  writeInt32LE(3); // LibraryId
-  writeByte(0x09); writeInt32LE(15); // -> survey array objId=15
+  writeByte(0x04);
+  writeLenStr("EzyPlanData.SortableBindingList`1[[EzyPlanData.Survey, EzyPlanData, Version=2.0.0.5, Culture=neutral, PublicKeyToken=null]]");
+  writeInt32LE(3);
+  writeInt32LE(3);
+  writeByte(0x09);
+  writeInt32LE(15); // -> SortableBindingList objId 15
 
-  // 9. Survey[] array (ArraySingleObject=0x11, objId=15)
-  const surveys = data.Surveys ?? [];
-  const nSurveys = surveys.length;
-  const SURVEY_BASE_ID = 20;
-  writeByte(0x11); writeInt32LE(15); writeInt32LE(nSurveys);
-  for (let si = 0; si < nSurveys; si++) {
-    writeByte(0x09); writeInt32LE(SURVEY_BASE_ID + si);
+  // 9. SortableBindingList (objId=15) - Standard 696-byte .NET BinaryFormatter block
+  // Base64 decoded represents the exact metadata graph for SortableBindingList<Survey> -> BindingList -> Collection -> List<Survey>
+  const sortableBlockB64 =
+    "BQ8AAAB7RXp5UGxhbkRhdGEuU29ydGFibGVCaW5kaW5nTGlzdGAxW1tFenlQbGFuRGF0YS5TdXJ2ZXksIEV6eVBsYW5EYXRhLCBWZXJzaW9uPTIuMC4wLjUsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49bnVsbF1dCAAAABdCaW5kaW5nTGlzdGAxK2FkZE5ld1BvcyRCaW5kaW5nTGlzdGAxK3JhaXNlTGlzdENoYW5nZWRFdmVudHMkQmluZGluZ0xpc3RgMStyYWlzZUl0ZW1DaGFuZ2VkRXZlbnRzFkJpbmRpbmdMaXN0YDErYWxsb3dOZXcXQmluZGluZ0xpc3RgMSthbGxvd0VkaXQZQmluZGluZ0xpc3RgMSthbGxvd1JlbW92ZR1CaW5kaW5nTGlzdGAxK3VzZXJTZXRBbGxvd05ldxJDb2xsZWN0aW9uYDEraXRlbXMAAAAAAAAAAwgBAQEBAQF7U3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuTGlzdGAxW1tFenlQbGFuRGF0YS5TdXJ2ZXksIEV6eVBsYW5EYXRhLCBWZXJzaW9uPTIuMC4wLjUsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49bnVsbF1dAwAAAP////8BAAEBAQAJEAAAAAQQAAAAe1N5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkxpc3RgMVtbRXp5UGxhbkRhdGEuU3VydmV5LCBFenlQbGFuRGF0YSwgVmVyc2lvbj0yLjAuMC41LCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPW51bGxdXQMAAAAGX2l0ZW1zBV9zaXplCF92ZXJzaW9uBAAAFEV6eVBsYW5EYXRhLlN1cnZleVtdAwAAAAgI";
+  if (typeof Buffer !== "undefined") {
+    const sBuf = Buffer.from(sortableBlockB64, "base64");
+    for (let i = 0; i < sBuf.length; i++) writeByte(sBuf[i]);
+  } else {
+    const binStr = atob(sortableBlockB64);
+    for (let i = 0; i < binStr.length; i++) writeByte(binStr.charCodeAt(i));
   }
 
-  // 10. BinaryLibrary for System (libId=95) — needed for PropertyChangedEventHandler
-  writeByte(0x0C); writeInt32LE(95);
+  // 10. List<Survey> values & ArrayInfo record (0x07)
+  const surveys = data.Surveys || [];
+  const nSurveys = surveys.length;
+  let capacity = 4;
+  while (capacity < nSurveys) {
+    capacity *= 2;
+  }
+  if (capacity < 16 && nSurveys > 0) capacity = 16;
+  if (nSurveys === 0) capacity = 0;
+
+  writeByte(0x09);
+  writeInt32LE(17); // _items ref -> objId 17
+  writeInt32LE(nSurveys); // _size
+  writeInt32LE(nSurveys); // _version
+
+  // ArrayInfo record (0x07) for Survey[]
+  writeByte(0x07);
+  writeInt32LE(17); // objId 17
+  writeByte(0x00); // 00 01 00 00 00 = rank (1) in BinaryFormatter 5-byte encoding
+  writeByte(0x01);
+  writeByte(0x00);
+  writeByte(0x00);
+  writeByte(0x00);
+  writeInt32LE(capacity); // length = capacity
+  writeByte(0x04); // Class
+  writeLenStr("EzyPlanData.Survey");
+  writeInt32LE(3); // libId = 3
+
+  // Array elements: MemberReferences for each survey
+  const SURVEY_BASE_ID = 18;
+  for (let si = 0; si < nSurveys; si++) {
+    writeByte(0x09);
+    writeInt32LE(SURVEY_BASE_ID + si);
+  }
+
+  // Fill remaining slots with ObjectNullMultiple (0x0D) or ObjectNull (0x0A)
+  const remainingNulls = capacity - nSurveys;
+  if (remainingNulls === 1) {
+    writeByte(0x0a);
+  } else if (remainingNulls > 1) {
+    writeByte(0x0d);
+    writeByte(remainingNulls);
+  }
+
+  // System BinaryLibrary
+  const sysLibId = SURVEY_BASE_ID + nSurveys;
+  writeByte(0x0c);
+  writeInt32LE(sysLibId);
   writeLenStr("System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
 
   // 11. Survey objects
-  for (let si = 0; si < nSurveys; si++) {
-    const s = surveys[si];
-    const surveyObjId = SURVEY_BASE_ID + si;
-    if (si === 0) {
-      // First: full ClassWithMembersAndTypes
-      writeByte(0x05); writeInt32LE(surveyObjId);
-      writeLenStr("EzyPlanData.Survey");
-      writeInt32LE(4);
-      writeLenStr("m_measuredDepth");
-      writeLenStr("m_dip");
-      writeLenStr("m_azimuth");
-      writeLenStr("PropertyChanged");
-      writeByte(0x00); writeByte(0x00); writeByte(0x00); writeByte(0x04);
-      writeByte(0x05); writeByte(0x05); writeByte(0x05); // Decimal x3
-      writeLenStr("System.ComponentModel.PropertyChangedEventHandler");
-      writeInt32LE(95); // libId for System
-      writeInt32LE(3);  // libId for Survey class
-    } else {
-      // Subsequent: ClassWithId (0x01) referencing first survey's metadata
-      writeByte(0x01); writeInt32LE(surveyObjId);
-      writeInt32LE(SURVEY_BASE_ID); // metadataId = first survey objId
+  if (nSurveys > 0) {
+    for (let si = 0; si < nSurveys; si++) {
+      const s = surveys[si];
+      const surveyObjId = SURVEY_BASE_ID + si;
+      if (si === 0) {
+        // First survey: full ClassWithMembersAndTypes
+        writeByte(0x05);
+        writeInt32LE(surveyObjId);
+        writeLenStr("EzyPlanData.Survey");
+        writeInt32LE(4);
+        writeLenStr("m_measuredDepth");
+        writeLenStr("m_dip");
+        writeLenStr("m_azimuth");
+        writeLenStr("PropertyChanged");
+        writeByte(0x00);
+        writeByte(0x00);
+        writeByte(0x00);
+        writeByte(0x04);
+        writeByte(0x05);
+        writeByte(0x05);
+        writeByte(0x05);
+        writeLenStr("System.ComponentModel.PropertyChangedEventHandler");
+        writeInt32LE(sysLibId);
+        writeInt32LE(3); // Survey class belongs to EzyPlanData (libId=3)
+      } else {
+        // Subsequent surveys: ClassWithId (0x01) referencing first survey metadata
+        writeByte(0x01);
+        writeInt32LE(surveyObjId);
+        writeInt32LE(SURVEY_BASE_ID);
+      }
+      writeDecimalStr(s.MD ?? 0);
+      writeDecimalStr(s.Dip ?? 0);
+      writeDecimalStr(s.Azimuth ?? 0);
+      writeByte(0x0a); // PropertyChanged null
     }
-    writeDecimalStr(s.MD      ?? 0);
-    writeDecimalStr(s.Dip     ?? 0);
-    writeDecimalStr(s.Azimuth ?? 0);
-    writeByte(0x0A); // NullObject for PropertyChanged
   }
 
   // 12. MessageEnd
