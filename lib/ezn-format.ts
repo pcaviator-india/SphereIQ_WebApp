@@ -185,7 +185,7 @@ export function serializeEznFile(data: {
   }>;
   format?: EznSerializeFormat;
 }): string | Uint8Array {
-  const format = data.format ?? "nrbf";
+  const format = data.format ?? "json";
 
   if (format === "nrbf") {
     return serializeNrbfEznFile({
