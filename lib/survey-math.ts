@@ -55,12 +55,7 @@ export function calculateTrajectory(
 ): CalculatedSurvey[] {
   const results: CalculatedSurvey[] = [];
 
-  // Filter out stations at MD=0 — these represent the collar position
-  // (vertical, Inc=0°, Az=0°), not real survey stations. Including them
-  // would incorrectly use their inclination in the next interval's average.
-  const validStations = stations.filter((s) => s.measuredDepth > 0);
-
-  if (validStations.length === 0) return results;
+  if (stations.length === 0) return results;
 
   let prevMD = 0;
   let prevInc = 0;
@@ -69,11 +64,19 @@ export function calculateTrajectory(
   let northing = collar.northing;
   let easting = collar.easting;
 
-  for (let i = 0; i < validStations.length; i++) {
-    const station = validStations[i];
-    const md = station.measuredDepth;
-    const inc = station.inclination;
-    const az = station.azimuth;
+  for (let i = 0; i < stations.length; i++) {
+    const station = stations[i];
+    let md = station.measuredDepth;
+    let inc = station.inclination;
+    let az = station.azimuth;
+
+    // MD=0 represents the collar position — treat as vertical (Inc=0°, Az=0°)
+    // so the first interval starts from the collar, not from the station's
+    // inclination value. This matches NavMath.AbsoluteSurvey() behavior.
+    if (md === 0) {
+      inc = 0;
+      az = 0;
+    }
 
     const deltaMD = md - prevMD;
 
@@ -81,7 +84,7 @@ export function calculateTrajectory(
     const avgAz = degToRad((prevAz + az) / 2);
     const dl = doglegAngle(
       { measuredDepth: prevMD, inclination: prevInc, azimuth: prevAz },
-      station
+      { measuredDepth: md, inclination: inc, azimuth: az }
     );
     const rf = ratioFactor(dl);
 
