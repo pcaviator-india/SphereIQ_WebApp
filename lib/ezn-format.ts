@@ -188,36 +188,37 @@ export function serializeEznFile(data: {
   const format = data.format ?? "json";
 
   if (format === "nrbf") {
-    return serializeNrbfEznFile({
-      holeId: data.holeId,
-      rigId: data.rigId ?? null,
-      location: data.location ?? null,
-      area: data.area ?? null,
-      drillingContractor: data.drillingContractor ?? null,
-      surveyingContractor: data.surveyingContractor ?? null,
-      client: data.client ?? null,
-      createdAt: data.createdAt ?? null,
-      sideTrackMd: data.sideTrackMd ?? null,
-      collar: data.collar
+    const nrbfDto: EznHoleFileDto = {
+      HoleID: data.holeId,
+      RigID: data.rigId ?? null,
+      Location: data.location ?? null,
+      Area: data.area ?? null,
+      DrillingContractor: data.drillingContractor ?? null,
+      SurveyingContractor: data.surveyingContractor ?? null,
+      Client: data.client ?? null,
+      CreatedDate: data.createdAt ?? null,
+      SideTrackMD: data.sideTrackMd ?? null,
+      Collar: data.collar
         ? {
-            easting: String(data.collar.easting ?? 0),
-            northing: String(data.collar.northing ?? 0),
-            elevation: data.collar.elevation !== undefined ? String(data.collar.elevation) : undefined,
+            Easting: Number(data.collar.easting ?? 0),
+            Northing: Number(data.collar.northing ?? 0),
+            Elevation: data.collar.elevation !== undefined ? Number(data.collar.elevation) : undefined,
           }
         : null,
-      target: data.target
+      Target: data.target
         ? {
-            easting: String(data.target.easting ?? 0),
-            northing: String(data.target.northing ?? 0),
-            tvd: String(data.target.tvd ?? 0),
+            Easting: Number(data.target.easting ?? 0),
+            Northing: Number(data.target.northing ?? 0),
+            TVD: Number(data.target.tvd ?? 0),
           }
         : null,
-      surveys: (data.surveys || []).map((s) => ({
-        measuredDepth: s.measuredDepth,
-        dip: s.inclination,
-        azimuth: s.azimuth,
+      Surveys: (data.surveys || []).map((s) => ({
+        MD: Number(s.measuredDepth),
+        Dip: Number(s.inclination),
+        Azimuth: Number(s.azimuth),
       })),
-    });
+    };
+    return serializeNrbfEznFile(nrbfDto);
   }
 
   const dto: EznHoleFileDto = {
