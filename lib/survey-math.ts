@@ -55,6 +55,13 @@ export function calculateTrajectory(
 ): CalculatedSurvey[] {
   const results: CalculatedSurvey[] = [];
 
+  // Filter out stations at MD=0 — these represent the collar position
+  // (vertical, Inc=0°, Az=0°), not real survey stations. Including them
+  // would incorrectly use their inclination in the next interval's average.
+  const validStations = stations.filter((s) => s.measuredDepth > 0);
+
+  if (validStations.length === 0) return results;
+
   let prevMD = 0;
   let prevInc = 0;
   let prevAz = 0;
@@ -62,65 +69,38 @@ export function calculateTrajectory(
   let northing = collar.northing;
   let easting = collar.easting;
 
-  for (let i = 0; i < stations.length; i++) {
-    const station = stations[i];
+  for (let i = 0; i < validStations.length; i++) {
+    const station = validStations[i];
     const md = station.measuredDepth;
     const inc = station.inclination;
     const az = station.azimuth;
 
     const deltaMD = md - prevMD;
 
-    if (i === 0) {
-      const avgInc = degToRad((prevInc + inc) / 2);
-      const avgAz = degToRad((prevAz + az) / 2);
-      const dl = doglegAngle(
-        { measuredDepth: 0, inclination: 0, azimuth: 0 },
-        station
-      );
-      const rf = ratioFactor(dl);
+    const avgInc = degToRad((prevInc + inc) / 2);
+    const avgAz = degToRad((prevAz + az) / 2);
+    const dl = doglegAngle(
+      { measuredDepth: prevMD, inclination: prevInc, azimuth: prevAz },
+      station
+    );
+    const rf = ratioFactor(dl);
 
-      tvd += deltaMD * Math.cos(avgInc);
-      northing += deltaMD * Math.sin(avgInc) * Math.cos(avgAz) * rf;
-      easting += deltaMD * Math.sin(avgInc) * Math.sin(avgAz) * rf;
+    tvd += deltaMD * Math.cos(avgInc);
+    northing += deltaMD * Math.sin(avgInc) * Math.cos(avgAz) * rf;
+    easting += deltaMD * Math.sin(avgInc) * Math.sin(avgAz) * rf;
 
-      const vs =
-        (northing - collar.northing) * Math.cos(degToRad(vsAzimuth)) +
-        (easting - collar.easting) * Math.sin(degToRad(vsAzimuth));
+    const vs =
+      (northing - collar.northing) * Math.cos(degToRad(vsAzimuth)) +
+      (easting - collar.easting) * Math.sin(degToRad(vsAzimuth));
 
-      results.push({
-        ...station,
-        trueVerticalDepth: tvd,
-        northing,
-        easting,
-        verticalSection: vs,
-        doglegSeverity: (dl * RAD_TO_DEG * 30) / Math.max(deltaMD, 0.1),
-      });
-    } else {
-      const avgInc = degToRad((prevInc + inc) / 2);
-      const avgAz = degToRad((prevAz + az) / 2);
-      const dl = doglegAngle(
-        { measuredDepth: prevMD, inclination: prevInc, azimuth: prevAz },
-        station
-      );
-      const rf = ratioFactor(dl);
-
-      tvd += deltaMD * Math.cos(avgInc);
-      northing += deltaMD * Math.sin(avgInc) * Math.cos(avgAz) * rf;
-      easting += deltaMD * Math.sin(avgInc) * Math.sin(avgAz) * rf;
-
-      const vs =
-        (northing - collar.northing) * Math.cos(degToRad(vsAzimuth)) +
-        (easting - collar.easting) * Math.sin(degToRad(vsAzimuth));
-
-      results.push({
-        ...station,
-        trueVerticalDepth: tvd,
-        northing,
-        easting,
-        verticalSection: vs,
-        doglegSeverity: (dl * RAD_TO_DEG * 30) / Math.max(deltaMD, 0.1),
-      });
-    }
+    results.push({
+      ...station,
+      trueVerticalDepth: tvd,
+      northing,
+      easting,
+      verticalSection: vs,
+      doglegSeverity: (dl * RAD_TO_DEG * 30) / Math.max(deltaMD, 0.1),
+    });
 
     prevMD = md;
     prevInc = inc;
