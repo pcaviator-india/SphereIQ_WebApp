@@ -351,48 +351,69 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
   writeInt32LE(drillMembers.length);
   for (const m of drillMembers) writeLenPrefixedStr(m);
 
-  const drillTypes = [0x05, 0x05, 0x05, 0x05, 0x0C, 0x0C, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06];
+  // Member types match real .NET BinaryFormatter output:
+  // 0x04 = object ref, 0x00 = primitive embedded directly, 0x01 = string
+  const drillTypes = [0x04, 0x04, 0x04, 0x04, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01];
   for (const t of drillTypes) writeByte(t);
 
+  // Object refs (type 0x04): m_surveyList=obj4, m_target=obj5, m_collar=obj6
   writeByte(0x09); writeInt32LE(4);
-  writeByte(0x09); writeInt32LE(2);
-  writeByte(0x09); writeInt32LE(3);
+  writeByte(0x09); writeInt32LE(5);
+  writeByte(0x09); writeInt32LE(6);
+  // Null (type 0x04 but value is null): m_reportList
   writeByte(0x0A);
+  // DateTime raw 8 bytes (type 0x00 = primitive embedded directly): m_createdDate
   const created = data.CreatedDate ? new Date(data.CreatedDate) : new Date();
   const ticks = BigInt(Math.floor(created.getTime() * 10000)) + BigInt("621355968000000000");
   writeInt32LE(Number(ticks & BigInt("0xFFFFFFFF")));
   writeInt32LE(Number((ticks >> BigInt(32)) & BigInt("0xFFFFFFFF")));
-  writeByte(0x06); writeLenPrefixedStr(String(data.SideTrackMD ?? -1));
+  // Decimal raw bytes (type 0x00): m_sideTrackMD - written as string using Int32 length prefix (type 0x01)
+  const stmd = data.SideTrackMD ?? -1;
+  const stmdStr = String(stmd);
+  writeInt32LE(stmdStr.length);
+  for (let i = 0; i < stmdStr.length; i++) writeByte(stmdStr.charCodeAt(i));
+  // Strings (type 0x01): m_holeId, m_rigId, m_location, m_area, m_drillingContractor, m_surveyingContractor, m_client
   const holeStrs = [data.HoleID, data.RigID ?? "RIG-01", data.Location ?? "", data.Area ?? "",
     data.DrillingContractor ?? "", data.SurveyingContractor ?? "", data.Client ?? ""];
-  for (const v of holeStrs) { writeByte(0x06); writeLenPrefixedStr(v); }
+  for (const v of holeStrs) {
+    writeInt32LE(v.length);
+    for (let i = 0; i < v.length; i++) writeByte(v.charCodeAt(i));
+  }
 
+  // Target: type 0x05 = object, member types 0x01 = strings
   writeByte(0x05); writeInt32LE(2);
   writeLenPrefixedStr("EzyPlanData.Target");
   const targetMembers = ["m_easting", "m_northing", "m_TVD"];
   writeInt32LE(targetMembers.length);
   for (const m of targetMembers) writeLenPrefixedStr(m);
-  writeInt32LE(3);
-  for (let i = 0; i < 3; i++) writeByte(0x0C);
+  // Member types: 0x01 = string for each
+  writeByte(0x01); writeByte(0x01); writeByte(0x01);
   const targetVals = [String(data.Target?.Easting ?? 0), String(data.Target?.Northing ?? 0), String(data.Target?.TVD ?? 0)];
-  for (const v of targetVals) { writeByte(0x06); writeLenPrefixedStr(v); }
+  for (const v of targetVals) {
+    writeInt32LE(v.length);
+    for (let i = 0; i < v.length; i++) writeByte(v.charCodeAt(i));
+  }
 
+  // Collar: type 0x05 = object, member types 0x01 = strings
   writeByte(0x05); writeInt32LE(3);
   writeLenPrefixedStr("EzyPlanData.Collar");
   const collarMembers = ["m_easting", "m_northing"];
   writeInt32LE(collarMembers.length);
   for (const m of collarMembers) writeLenPrefixedStr(m);
-  writeInt32LE(2);
-  for (let i = 0; i < 2; i++) writeByte(0x0C);
+  writeByte(0x01); writeByte(0x01);
   const collarVals = [String(data.Collar?.Easting ?? 0), String(data.Collar?.Northing ?? 0)];
-  for (const v of collarVals) { writeByte(0x06); writeLenPrefixedStr(v); }
+  for (const v of collarVals) {
+    writeInt32LE(v.length);
+    for (let i = 0; i < v.length; i++) writeByte(v.charCodeAt(i));
+  }
 
   const surveys = data.Surveys || [];
+  // SurveyList object
   writeByte(0x05); writeInt32LE(4);
   writeLenPrefixedStr("EzyPlanData.SurveyList");
   writeInt32LE(1);
   writeLenPrefixedStr("m_list");
-  writeInt32LE(1);
+  // Member type for m_list: 0x05 = object ref to SurveyList+Data
   writeByte(0x05);
   writeLenPrefixedStr("EzyPlanData.SurveyList+Data");
   writeInt32LE(surveys.length);
@@ -401,6 +422,7 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
     writeByte(0x09); writeInt32LE(surveyObjId);
   }
 
+  // Each Survey object
   for (let si = 0; si < surveys.length; si++) {
     const s = surveys[si];
     const surveyObjId = 10 + si;
@@ -409,10 +431,13 @@ export function serializeNrbfEznFile(data: EznHoleFileDto): Uint8Array {
     const surveyMembers = ["m_measuredDepth", "m_dip", "m_azimuth"];
     writeInt32LE(surveyMembers.length);
     for (const m of surveyMembers) writeLenPrefixedStr(m);
-    writeInt32LE(3);
-    for (let i = 0; i < 3; i++) writeByte(0x0C);
+    // Member types: 0x01 = string for each
+    writeByte(0x01); writeByte(0x01); writeByte(0x01);
     const surveyVals = [String(s.MD ?? 0), String(s.Dip ?? 0), String(s.Azimuth ?? 0)];
-    for (const v of surveyVals) { writeByte(0x06); writeLenPrefixedStr(v); }
+    for (const v of surveyVals) {
+      writeInt32LE(v.length);
+      for (let i = 0; i < v.length; i++) writeByte(v.charCodeAt(i));
+    }
   }
 
   writeByte(0x0B);
