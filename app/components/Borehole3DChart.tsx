@@ -217,6 +217,62 @@ export default function Borehole3DChart({
     gridBottom.position.y = -BOX_Y / 2;
     scene.add(gridBottom);
 
+    // ── Axis tick labels (matching original Ezy-Nav markings) ──────────────
+    function makeTextSprite(text: string, position: THREE.Vector3, color = 0x444444, fontSize = 11) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d")!;
+      canvas.width = 120;
+      canvas.height = 28;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.fillRect(0, 0, 120, 28);
+      ctx.fillStyle = "#" + color.toString(16).padStart(6, "0");
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 60, 16);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.copy(position);
+      sprite.scale.set(5.5, 1.4, 1);
+      scene.add(sprite);
+    }
+
+    // TVD tick labels (left vertical edge, going down)
+    const tvdTickCount = 9;
+    for (let i = 0; i <= tvdTickCount; i++) {
+      const tvd = bMinTVD + ((bMaxTVD - bMinTVD) * i) / tvdTickCount;
+      const pos = toThree(bMinE, tvd, bMinN);
+      pos.x = -BOX_X / 2 - 4; // just outside left edge
+      pos.z = BOX_Z / 2 - 1; // front face
+      makeTextSprite(tvd.toFixed(0), pos, 0x444444, 10);
+    }
+
+    // Easting tick labels (bottom edge, left to right)
+    const eastTickCount = 5;
+    for (let i = 0; i <= eastTickCount; i++) {
+      const easting = bMinE + ((bMaxE - bMinE) * i) / eastTickCount;
+      const pos = toThree(easting, bMinTVD, bMinN);
+      pos.y = -BOX_Y / 2 - 4; // just below bottom edge
+      pos.z = BOX_Z / 2 - 1; // front face
+      makeTextSprite(easting.toFixed(0), pos, 0x444444, 10);
+    }
+
+    // Northing tick labels (bottom edge, going back from front-left)
+    const northTickCount = 5;
+    for (let i = 0; i <= northTickCount; i++) {
+      const northing = bMinN + ((bMaxN - bMinN) * i) / northTickCount;
+      const pos = toThree(bMinE, bMinTVD, northing);
+      pos.y = -BOX_Y / 2 - 4; // just below bottom edge
+      pos.x = -BOX_X / 2 - 4; // just outside left edge
+      makeTextSprite(northing.toFixed(0), pos, 0x444444, 10);
+    }
+
     // 3. Draw Planned Hole Path (Black line from Collar to Target)
     if (collar && target && visibleLayers.plan) {
       const pCollar = toThree(Number(collar.easting), 0, Number(collar.northing));
