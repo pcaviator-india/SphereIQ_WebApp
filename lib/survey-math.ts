@@ -79,13 +79,11 @@ export function calculateTrajectory(
     let inc = station.inclination;
     let az = station.azimuth;
 
-    // MD=0 represents the collar position — treat as vertical (Inc=0°, Az=0°)
-    // so the first interval starts from the collar, not from the station's
-    // inclination value. This matches NavMath.AbsoluteSurvey() behavior.
-    if (md === 0) {
-      inc = 0;
-      az = 0;
-    }
+    // MD=0 represents the collar position. The first interval from collar
+    // (prevMD=0) to this station (md=0) has deltaMD=0, so no movement occurs
+    // regardless of inclination. But we keep the actual Inc/Az values so the
+    // next interval (MD=0 → MD=6) uses the correct average inclination.
+    // This matches NavMath.AbsoluteSurvey() behavior.
 
     const deltaMD = new Decimal(md).minus(prevMD);
     const deltaMDNum = deltaMD.toNumber();
