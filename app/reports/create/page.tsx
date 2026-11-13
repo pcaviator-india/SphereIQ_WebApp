@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { getServerAuthSession } from "@/lib/auth";
+import { useSearchParams } from "next/navigation";
 
 interface ReportComponentFlags {
   surveyData: boolean;
@@ -13,17 +12,15 @@ interface ReportComponentFlags {
   charts: boolean;
 }
 
-export default async function CreateReportPage() {
-  const session = await getServerAuthSession();
-  if (!session?.user?.id) {
-    return null;
-  }
+export default function CreateReportPage() {
+  const searchParams = useSearchParams();
+  const urlHoleId = searchParams.get("holeId") || "";
 
   const [step, setStep] = useState<"userFields" | "components" | "submitting">("userFields");
-  const [holeId, setHoleId] = useState("");
+  const [holeId, setHoleId] = useState(urlHoleId);
   const [title, setTitle] = useState("");
   const [type, setType] = useState("status");
-  const [author, setAuthor] = useState(session.user.name || "");
+  const [author, setAuthor] = useState("");
   const [notes, setNotes] = useState("");
   const [components, setComponents] = useState<ReportComponentFlags>({
     surveyData: true,

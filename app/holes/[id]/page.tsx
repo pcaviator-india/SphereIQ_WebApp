@@ -363,6 +363,22 @@ export default function HoleManagementPage({ params }: { params: { id: string } 
             <span>📊</span>
             <span>Export Surveys (CSV)</span>
           </a>
+
+          <div className="hidden lg:block my-2 border-t border-slate-800" />
+
+          {/* Report Button */}
+          <Link
+            href={`/reports/create?holeId=${params.id}`}
+            className="flex items-center gap-2 px-3 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 border border-indigo-400"
+          >
+            <div className="w-6 h-6 rounded-full bg-indigo-950/60 flex items-center justify-center shrink-0 border border-indigo-300">
+              <span className="text-xs">📄</span>
+            </div>
+            <div className="leading-tight">
+              <div className="text-[13px] font-bold">Report</div>
+              <div className="text-[10px] text-indigo-100 font-normal">Generate borehole report</div>
+            </div>
+          </Link>
         </div>
 
         {/* Center Details Panel matching Screenshot 1 */}
