@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { holeId, title, type, pdfUrl } = body;
+    const { holeId, title, type, author, notes, pdfUrl } = body;
 
     if (!holeId || !title || !type) {
       return NextResponse.json(
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         holeId,
         title,
         type,
+        author: author || null,
+        notes: notes || null,
         pdfUrl: pdfUrl || null,
         userId: session.user.id,
       },

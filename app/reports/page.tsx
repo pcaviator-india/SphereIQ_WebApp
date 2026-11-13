@@ -25,6 +25,12 @@ export default async function ReportsPage() {
                 View and manage your borehole reports
               </p>
             </div>
+            <Link
+              href="/reports/create"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2"
+            >
+              <span className="font-semibold">+ Create Report</span>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

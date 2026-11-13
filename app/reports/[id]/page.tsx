@@ -65,12 +65,18 @@ export default async function ReportDetailPage({
           </div>
 
           <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
                   Report Type
                 </h3>
                 <p className="text-gray-900 font-medium">{report.type}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                  Author
+                </h3>
+                <p className="text-gray-900 font-medium">{report.author || "—"}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
@@ -89,6 +95,15 @@ export default async function ReportDetailPage({
                 </p>
               </div>
             </div>
+
+            {report.notes && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                  Notes
+                </h3>
+                <p className="text-gray-900 font-medium italic">"{report.notes}"</p>
+              </div>
+            )}
 
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Report Preview</h3>

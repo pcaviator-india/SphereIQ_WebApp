@@ -102,6 +102,8 @@ model Report {
   hole      Hole     @relation(fields: [holeId], references: [id], onDelete: Cascade)
   title     String
   type      String   // build | trend | extrapolate | status
+  author    String?
+  notes     String?
   pdfUrl    String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
