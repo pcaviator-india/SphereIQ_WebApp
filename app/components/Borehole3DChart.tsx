@@ -218,18 +218,18 @@ export default function Borehole3DChart({
     scene.add(gridBottom);
 
     // ── Axis tick labels (matching original Ezy-Nav markings) ──────────────
-    function makeTextSprite(text: string, position: THREE.Vector3, color = 0x444444, fontSize = 11) {
+    function makeTextSprite(text: string, position: THREE.Vector3, color = 0x444444) {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d")!;
-      canvas.width = 120;
-      canvas.height = 28;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.fillRect(0, 0, 120, 28);
+      canvas.width = 160;
+      canvas.height = 40;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.fillRect(0, 0, 160, 40);
       ctx.fillStyle = "#" + color.toString(16).padStart(6, "0");
-      ctx.font = `${fontSize}px sans-serif`;
+      ctx.font = "bold 18px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(text, 60, 16);
+      ctx.fillText(text, 80, 20);
 
       const texture = new THREE.CanvasTexture(canvas);
       const material = new THREE.SpriteMaterial({
@@ -239,7 +239,7 @@ export default function Borehole3DChart({
       });
       const sprite = new THREE.Sprite(material);
       sprite.position.copy(position);
-      sprite.scale.set(5.5, 1.4, 1);
+      sprite.scale.set(8, 2, 1);
       scene.add(sprite);
     }
 
@@ -250,7 +250,7 @@ export default function Borehole3DChart({
       const pos = toThree(bMinE, tvd, bMinN);
       pos.x = -BOX_X / 2 - 4; // just outside left edge
       pos.z = BOX_Z / 2 - 1; // front face
-      makeTextSprite(tvd.toFixed(0), pos, 0x444444, 10);
+      makeTextSprite(tvd.toFixed(0), pos, 0x444444);
     }
 
     // Easting tick labels (bottom edge, left to right)
@@ -260,7 +260,7 @@ export default function Borehole3DChart({
       const pos = toThree(easting, bMinTVD, bMinN);
       pos.y = -BOX_Y / 2 - 4; // just below bottom edge
       pos.z = BOX_Z / 2 - 1; // front face
-      makeTextSprite(easting.toFixed(0), pos, 0x444444, 10);
+      makeTextSprite(easting.toFixed(0), pos, 0x444444);
     }
 
     // Northing tick labels (bottom edge, going back from front-left)
@@ -270,7 +270,7 @@ export default function Borehole3DChart({
       const pos = toThree(bMinE, bMinTVD, northing);
       pos.y = -BOX_Y / 2 - 4; // just below bottom edge
       pos.x = -BOX_X / 2 - 4; // just outside left edge
-      makeTextSprite(northing.toFixed(0), pos, 0x444444, 10);
+      makeTextSprite(northing.toFixed(0), pos, 0x444444);
     }
 
     // 3. Draw Planned Hole Path (Black line from Collar to Target)
